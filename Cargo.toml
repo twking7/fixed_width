@@ -1,0 +1,2 @@
+[workspace]
+members = ["fixed_width", "fixed_width_derive"]
