@@ -13,7 +13,7 @@ proc-macro = true
 proc-macro2 = "0.4.6"
 syn = { version = "0.14.2", features = ["extra-traits"] }
 quote = "0.6.3"
-fixed_width = { path = "../fixed_width" }
+fixed_width = { version = "0.1.0" }
 
 [dev-dependencies]
 serde = "1.0"
