@@ -1,5 +1,7 @@
 # Fixed Width
 
+[![Build Status](https://travis-ci.org/twking7/fixed_width.svg?branch=master)](https://travis-ci.org/twking7/fixed_width)
+
 A fixed width data reader and writer library. Also supports [Serde](https://github.com/serde-rs/serde)
 
 ## Documentation
