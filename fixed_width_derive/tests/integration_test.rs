@@ -5,8 +5,9 @@ extern crate serde_derive;
 extern crate fixed_width;
 extern crate serde;
 
-use fixed_width::{DeserializeError, Deserializer, FixedWidth, Serializer};
+use fixed_width::{DeserializeError, Deserializer, FixedWidth, Serializer, Reader};
 use serde::{Deserialize, Serialize};
+use std::result;
 
 #[derive(FixedWidth, Serialize, Deserialize)]
 struct Stuff {
@@ -66,6 +67,19 @@ fn test_deserialize() {
     assert_eq!(stuff.stuff4, 9);
     assert_eq!(stuff.stuff5, "foobar");
     assert_eq!(stuff.stuff6, "123");
+}
+
+#[test]
+fn test_deserialize_multiple() {
+    let fr = "   foo000bar234   9  foobar321    foo000bar234   9  foobar123 ".as_bytes();
+
+    let mut rdr = Reader::from_bytes(fr).width(31);
+
+    for record in rdr.byte_reader().filter_map(result::Result::ok) {
+        let stuff: Stuff = fixed_width::from_bytes(&record).unwrap();
+        assert_eq!(stuff.stuff1, "foo");
+        assert_eq!(stuff.stuff2, "000bar");
+    }
 }
 
 #[test]

@@ -70,6 +70,7 @@ use std::result;
 // It is not necessary to use `fixed_width_derive`, you can manually implement the `FixedWidth` trait.
 #[derive(FixedWidth, Deserialize)]
 struct Record {
+  #[fixed_width(range = "0..5")]
   pub n: usize,
 }
 
@@ -78,9 +79,9 @@ fn main() {
 
   let mut reader = Reader::from_string(data).width(5);
 
-  for bytes in reader.deserialize_reader() {
+  for bytes in reader.byte_reader().filter_map(result::Result::ok) {
     // You must specify the type for deserialization
-    let record: Record = bytes.unwrap();
+    let record: Record = fixed_width::from_bytes(&bytes).unwrap();
 
     // Prints "12345" and then "54321"
     println!("{}", record.n);
