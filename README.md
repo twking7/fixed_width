@@ -32,7 +32,7 @@ extern crate fixed_width_derive;
 
 ## Example
 
-Read fixed width data from a `&str`, specifying field definitions manually:
+Read fixed width data from a `&str`:
 
 ```rust
 extern crate fixed_width;
@@ -42,8 +42,6 @@ use std::result;
 
 fn main() {
   let data = "1234554321";
-  let fields = vec![Field::default().range(0..5)];
-
   let mut reader = Reader::from_string(data).width(5);
 
   for record in reader.string_reader().filter_map(result::Result::ok) {
