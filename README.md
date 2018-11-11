@@ -87,6 +87,58 @@ fn main() {
 }
 ```
 
+Read data where there are different record types in the file:
+
+```rust
+#[macro_use]
+extern crate fixed_width_derive;
+
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+
+use fixed_width::{FixedWidth, Field, Reader, from_bytes};
+use std::result;
+
+#[derive(FixedWidth, Deserialize)]
+struct Record1 {
+  #[fixed_width(range = "0..1")]
+  pub record_type: usize,
+  #[fixed_width(range = "1..5")]
+  pub state: String,
+}
+
+#[derive(FixedWidth, Deserialize)]
+struct Record2 {
+  #[fixed_width(range = "0..1")]
+  pub record_type: usize,
+  #[fixed_width(range = "1..5")]
+  pub name: String,
+}
+
+fn main() {
+  let data = "0OHIO1 BOB";
+
+  let mut reader = Reader::from_string(data).width(5);
+
+  while let Some(Ok(bytes)) = reader.next_record() {
+    match bytes.get(0) {
+      Some(b'0') => {
+        let Record1 { state, .. } = from_bytes(bytes).unwrap();
+        assert_eq!(state, "OHIO");
+      },
+      Some(b'1') => {
+        let Record2 { name, .. } = from_bytes(bytes).unwrap();
+        assert_eq!(name, "BOB");
+      },
+      Some(_) => {},
+      None => {},
+    }
+  }
+}
+
+```
+
 ## License
 
 Licensed under MIT.
