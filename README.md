@@ -14,10 +14,10 @@ Add as a dependency:
 
 ```toml
 [dependencies]
-fixed_width = "0.2"
+fixed_width = "0.3"
 
 # Optionally, if you are running Rust version 1.30.0 or above and want to derive fixed width field definitions:
-fixed_width_derive = "0.2"
+fixed_width_derive = "0.3"
 ```
 
 in the root of your crate:
