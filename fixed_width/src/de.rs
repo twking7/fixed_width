@@ -410,7 +410,7 @@ impl<'a, 'de: 'a> serde::Deserializer<'de> for &'a mut Deserializer<'de> {
     }
 
     fn deserialize_string<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-        self.next_str().and_then(|s| visitor.visit_str(&s))
+        self.next_str().and_then(|s| visitor.visit_borrowed_str(&s))
     }
 
     fn deserialize_char<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
