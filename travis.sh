@@ -24,14 +24,8 @@ if [ -n "${CLIPPY}" ]; then
     cd "$DIR/fixed_width_derive"
     cargo clippy -- -Dclippy
 else
-    CHANNEL=nightly
-    cd "$DIR"
-    cargo clean
-    channel build
-    channel test
-
-    for CHANNEL in beta stable; do
-      cd "$DIR/fixed_width"
+    for CHANNEL in beta stable nightly; do
+      cd "$DIR"
       cargo clean
       channel build
       channel test

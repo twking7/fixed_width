@@ -16,7 +16,7 @@ Add as a dependency:
 [dependencies]
 fixed_width = "0.1"
 
-# Optionally, if you are willing to run nightly and want to derive fixed width field definitions:
+# Optionally, if you are running Rust version 1.30.0 or above and want to derive fixed width field definitions:
 fixed_width_derive = "0.1"
 ```
 

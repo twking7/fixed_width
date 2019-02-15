@@ -2,7 +2,7 @@
 This create provides a derive macro for the `fixed_width` crate's `Field` trait by providing
 a set of struct field attributes that can be used to more easily derive the trait.
 
-The derive only works on structs. Additionally, this crate uses features that require Rust nightly to run.
+The derive only works on structs. Additionally, this crate uses features that require Rust version 1.30.0+ to run.
 
 # Installing
 
@@ -86,8 +86,6 @@ left or right once it has been converted to bytes.
 Defaults to the name of the struct field. Indicates the name of the field. Useful if you wish to deserialize
 fixed width data into a HashMap.
 !*/
-#![feature(proc_macro)]
-#![feature(extern_prelude)]
 
 extern crate proc_macro;
 extern crate proc_macro2;
