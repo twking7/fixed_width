@@ -369,7 +369,7 @@ impl<'a, 'de: 'a> serde::Deserializer<'de> for &'a mut Deserializer<'de> {
                 s.len()
             )))
         } else {
-            let c = s.chars().next().unwrap();
+            let c = s.chars().next().unwrap_or('0');
             if c == '0' {
                 visitor.visit_bool(false)
             } else {
@@ -421,7 +421,8 @@ impl<'a, 'de: 'a> serde::Deserializer<'de> for &'a mut Deserializer<'de> {
                 s.len()
             )))
         } else {
-            visitor.visit_char(s.chars().next().unwrap())
+            let c = s.chars().next().unwrap_or(' ');
+            visitor.visit_char(c)
         }
     }
 
@@ -526,7 +527,8 @@ impl<'a, 'de: 'a> serde::Deserializer<'de> for &'a mut Deserializer<'de> {
             } else if s == "0" {
                 visitor.visit_bool(false)
             } else {
-                visitor.visit_char(s.chars().next().unwrap())
+                let c = s.chars().next().unwrap_or(' ');
+                visitor.visit_char(c)
             }
         } else if let Ok(n) = s.parse::<i64>() {
             visitor.visit_i64(n)
@@ -909,5 +911,31 @@ mod test {
                 a: UntaggedEnum::Int(111)
             }
         );
+    }
+
+    #[derive(Debug, PartialEq, Deserialize)]
+    struct TestChar {
+        a: char,
+    }
+
+    #[derive(Debug, PartialEq, Deserialize)]
+    struct TestBool {
+        a: bool,
+    }
+
+    #[test]
+    fn test_does_not_panic_for_empty_char() {
+        let fields = vec![Field::default().range(0..1)];
+        let tc: TestChar = from_bytes_with_fields(b"  ", fields).unwrap();
+
+        assert_eq!(tc.a, ' ');
+    }
+
+    #[test]
+    fn test_does_not_panic_for_empty_bool() {
+        let fields = vec![Field::default().range(0..1)];
+        let tc: TestBool = from_bytes_with_fields(b"  ", fields).unwrap();
+
+        assert_eq!(tc.a, false);
     }
 }
