@@ -1,23 +1,16 @@
 use serde::ser::{self, Error as SerError, Serialize};
-use std::error::Error as StdError;
-use std::fmt;
-use std::io;
-use std::iter;
-use std::vec;
-
-use error::Error;
-use writer::Writer;
-use {Field, FixedWidth, Justify, Result};
+use std::{fmt, io, iter, vec, error::Error as StdError};
+use crate::{
+    error::Error, writer::Writer, Field, FixedWidth, Justify, Result,
+};
 
 /// Serializes the given type that implements `FixedWidth` and `Serialize` to a `String`.
 ///
 /// ### Example
 ///
 /// ```rust
-/// #[macro_use]
-/// extern crate serde_derive;
-/// extern crate serde;
-/// extern crate fixed_width;
+/// use serde_derive::Serialize;
+/// use serde;
 /// use fixed_width::{Field, FixedWidth};
 ///
 /// #[derive(Serialize)]
@@ -53,10 +46,8 @@ pub fn to_string<T: FixedWidth + Serialize>(record: &T) -> Result<String> {
 /// ### Example
 ///
 /// ```rust
-/// #[macro_use]
-/// extern crate serde_derive;
-/// extern crate serde;
-/// extern crate fixed_width;
+/// use serde_derive::Serialize;
+/// use serde;
 /// use fixed_width::{Field, FixedWidth};
 ///
 /// #[derive(Serialize)]
@@ -93,12 +84,9 @@ pub fn to_bytes<T: FixedWidth + Serialize>(record: &T) -> Result<Vec<u8>> {
 /// ### Example
 ///
 /// ```rust
-/// #[macro_use]
-/// extern crate serde_derive;
-/// extern crate serde;
-/// extern crate fixed_width;
-///
-/// use fixed_width::{Field, FixedWidth, Writer, to_writer};
+/// use serde_derive::Serialize;
+/// use serde;
+/// use fixed_width::{Field, FixedWidth, Writer};
 ///
 /// #[derive(Serialize)]
 /// struct Person {
@@ -123,7 +111,7 @@ pub fn to_bytes<T: FixedWidth + Serialize>(record: &T) -> Result<Vec<u8>> {
 ///         age: 25,
 ///     };
 ///
-///     to_writer(&mut w, &person).unwrap();
+///     fixed_width::to_writer(&mut w, &person).unwrap();
 ///
 ///     let s: String = w.into();
 ///     assert_eq!("coolname25", s);
@@ -221,9 +209,7 @@ impl<'w, W: 'w + io::Write> Serializer<'w, W> {
     /// ### Example
     ///
     /// ```rust
-    /// extern crate serde;
-    /// extern crate fixed_width;
-    ///
+    /// use serde;
     /// use fixed_width::{Field, Serializer, Writer};
     /// use serde::Serialize;
     ///
@@ -524,9 +510,10 @@ fn pad(bytes: &[u8], field: &Field) -> Vec<u8> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use serde_derive::Serialize;
     use serde_bytes::ByteBuf;
     use std::collections::HashMap;
-    use {Field, FixedWidth, Writer};
+    use crate::{Field, FixedWidth, Writer};
 
     #[test]
     fn bool_ser() {

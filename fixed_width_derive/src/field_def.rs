@@ -1,5 +1,5 @@
-use std::collections::HashMap;
-use std::ops::Range;
+use std::{collections::HashMap, ops::Range};
+use syn::parse_quote;
 
 #[derive(Debug)]
 pub struct FieldDef {

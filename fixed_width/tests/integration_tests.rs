@@ -1,11 +1,5 @@
-extern crate fixed_width;
-
-use fixed_width::LineBreak;
-use fixed_width::Reader;
-use fixed_width::Writer;
-use std::fs::{self, File};
-use std::io::Write;
-use std::result;
+use fixed_width::{LineBreak, Reader, Writer};
+use std::{fs::{self, File}, io::Write, result};
 
 #[test]
 fn read_from_file() {

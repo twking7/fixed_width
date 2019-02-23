@@ -23,11 +23,10 @@ fixed_width_derive = "0.3"
 in the root of your crate:
 
 ```rust
-extern crate fixed_width;
+use fixed_width;
 
 // and if you are using fixed_width_derive:
-#[macro_use]
-extern crate fixed_width_derive;
+use fixed_width_derive::FixedWidth;
 ```
 
 ## Example
@@ -35,8 +34,6 @@ extern crate fixed_width_derive;
 Read fixed width data from a `&str`:
 
 ```rust
-extern crate fixed_width;
-
 use fixed_width::{FixedWidth, Field, Reader};
 use std::result;
 
@@ -54,15 +51,10 @@ fn main() {
 Read data from a `&str` using serde, using `fixed_width_derive`:
 
 ```rust
-extern crate fixed_width;
-#[macro_use]
-extern crate fixed_width_derive;
-
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-
+use serde::Deserialize;
+use serde_derive::Deserialize;
 use fixed_width::{FixedWidth, Field, Reader};
+use fixed_width_derive::FixedWidth;
 use std::result;
 
 // It is not necessary to use `fixed_width_derive`, you can manually implement the `FixedWidth` trait.
@@ -90,14 +82,11 @@ fn main() {
 Read data where there are different record types in the file:
 
 ```rust
-#[macro_use]
-extern crate fixed_width_derive;
-
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
+use serde::Deserialize;
+use serde_derive::Deserialize;
 
 use fixed_width::{FixedWidth, Field, Reader, from_bytes};
+use fixed_width_derive::FixedWidth;
 use std::result;
 
 #[derive(FixedWidth, Deserialize)]

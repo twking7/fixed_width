@@ -1,26 +1,19 @@
-use serde::{self, de};
-use std::error::Error as StdError;
-use std::fmt;
-use std::iter;
-use std::num;
-use std::result::Result;
-use std::str;
-use std::vec;
-
-use error;
-use serde::de::{Deserialize, Error, IntoDeserializer, Visitor};
-
-use {Field, FixedWidth};
+use serde::{
+    self, de::{self, Deserialize, Error, IntoDeserializer, Visitor},
+};
+use std::{
+    convert, fmt, iter, num, result::Result, str, vec,
+    error::Error as StdError,
+};
+use crate::{error, Field, FixedWidth};
 
 /// Deserializes a `&str` into the given type that implements `FixedWidth` and `Deserialize`.
 ///
 /// ### Example
 ///
 /// ```rust
-/// #[macro_use]
-/// extern crate serde_derive;
-/// extern crate serde;
-/// extern crate fixed_width;
+/// use serde_derive::Deserialize;
+/// use serde;
 /// use fixed_width::{Field, FixedWidth};
 ///
 /// #[derive(Deserialize)]
@@ -58,10 +51,8 @@ where
 /// ### Example
 ///
 /// ```rust
-/// #[macro_use]
-/// extern crate serde_derive;
-/// extern crate serde;
-/// extern crate fixed_width;
+/// use serde_derive::Deserialize;
+/// use serde;
 /// use fixed_width::{Field, FixedWidth};
 ///
 /// #[derive(Deserialize)]
@@ -145,7 +136,7 @@ where
     T: Deserialize<'de>,
 {
     let mut de = Deserializer::new(bytes, fields);
-    T::deserialize(&mut de).map_err(|e| e.into())
+    T::deserialize(&mut de).map_err(convert::Into::into)
 }
 
 /// Errors that occur during deserialization.
@@ -254,9 +245,7 @@ impl<'r, 'de> Deserializer<'r> {
     /// ### Example
     ///
     /// ```rust
-    /// extern crate serde;
-    /// extern crate fixed_width;
-    ///
+    /// use serde;
     /// use fixed_width::{Deserializer, Field};
     /// use serde::Deserialize;
     /// use std::collections::HashMap;
@@ -653,9 +642,10 @@ impl<'a, 'de: 'a> de::VariantAccess<'de> for &'a mut Deserializer<'de> {
 mod test {
     use super::*;
     use serde::Deserialize;
+    use serde_derive::Deserialize;
     use serde_bytes::ByteBuf;
     use std::collections::HashMap;
-    use {Field, FixedWidth};
+    use crate::{Field, FixedWidth};
 
     #[test]
     fn bool_de() {

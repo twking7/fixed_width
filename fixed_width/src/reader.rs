@@ -1,11 +1,7 @@
-use std::fs;
-use std::io::{self, Read};
-use std::path::Path;
+use std::{fs, io::{self, Read}, path::Path};
+use crate::{error::Error, LineBreak, Result};
 
 const BUFFER_SIZE: usize = 8 * (1 << 10);
-
-use error::Error;
-use {LineBreak, Result};
 
 /// An iterator of `Vec<u8>` records.
 ///
@@ -28,11 +24,8 @@ pub struct StringReader<'a, R: 'a> {
 /// Parsing fixed width data into a struct;
 ///
 /// ```rust
-/// #[macro_use]
-/// extern crate serde_derive;
-/// extern crate serde;
-/// extern crate fixed_width;
-///
+/// use serde_derive::Deserialize;
+/// use serde;
 /// use fixed_width::{Field, FixedWidth, Reader};
 /// use serde::Deserialize;
 /// use std::result;
@@ -71,9 +64,7 @@ pub struct StringReader<'a, R: 'a> {
 /// Parsing fixed width data into a `HashMap<String, String>`:
 ///
 /// ```rust
-/// extern crate serde;
-/// extern crate fixed_width;
-///
+/// use serde;
 /// use fixed_width::{Field, FixedWidth, Deserializer, Reader};
 /// use std::collections::HashMap;
 /// use serde::Deserialize;
@@ -412,8 +403,9 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use serde_derive::Deserialize;
     use std::result;
-    use {Field, FixedWidth};
+    use crate::{Field, FixedWidth};
 
     #[test]
     fn read_next_record() {

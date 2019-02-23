@@ -1,11 +1,8 @@
-use std::borrow::Cow;
-use std::io::{self, Write};
+use std::{io::{self, Write}, borrow::Cow};
+use serde::ser::Serialize;
+use crate::{ser, FixedWidth, LineBreak, Result};
 
 const BUFFER_SIZE: usize = 65_536;
-
-use ser;
-use serde::ser::Serialize;
-use {FixedWidth, LineBreak, Result};
 
 /// A trait to ease converting byte like data into a byte slice. This allows handling these types
 /// with one generic function.
@@ -70,7 +67,7 @@ impl<'a, T: ?Sized + AsByteSlice> AsByteSlice for &'a T {
 /// Writing a `Vec<String>` to a file:
 ///
 /// ```rust
-/// extern crate fixed_width;
+/// use fixed_width;
 /// use std::io::Write;
 /// use fixed_width::Writer;
 ///
@@ -215,7 +212,8 @@ impl Into<String> for Writer<Vec<u8>> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use {Field, FixedWidth};
+    use serde_derive::Serialize;
+    use crate::{Field, FixedWidth};
 
     #[test]
     fn write_to_memory() {

@@ -1,9 +1,5 @@
-use de::DeserializeError;
-use ser::SerializeError;
-use std::error::Error as StdError;
-use std::fmt;
-use std::io;
-use std::string;
+use crate::{de::DeserializeError, ser::SerializeError};
+use std::{fmt, io, string, error::Error as StdError};
 
 /// An error produced while parsing fixed width data.
 #[derive(Debug)]

@@ -9,25 +9,15 @@ The derive only works on structs. Additionally, this crate uses features that re
 Start by adding the dependency to your project in `Cargo.toml`:
 
 ```toml
-fixed_width = "0.1"
-fixed_width_derive = "0.1"
-```
-
-Then in the root of your project:
-
-```
-#[macro_use]
-extern crate fixed_width_derive;
-extern crate fixed_width;
-# fn main() {}
+fixed_width = "0.3"
+fixed_width_derive = "0.3"
 ```
 
 # Usage
 
 ```rust
-#[macro_use]
-extern crate fixed_width_derive;
-extern crate fixed_width;
+use fixed_width_derive::FixedWidth;
+use fixed_width::FixedWidth;
 
 #[derive(FixedWidth)]
 struct Person {
@@ -45,8 +35,6 @@ The above sample is equivalent to implementing the following with the `fixed_wid
 crate alone:
 
 ```rust
-extern crate fixed_width;
-
 use fixed_width::{FixedWidth, Field, Justify};
 
 struct Person {
@@ -90,17 +78,14 @@ fixed width data into a HashMap.
 extern crate proc_macro;
 extern crate proc_macro2;
 #[macro_use]
-extern crate syn;
-#[macro_use]
 extern crate quote;
-extern crate fixed_width;
 
+use syn::DeriveInput;
 use proc_macro::TokenStream;
 use std::result;
-use syn::DeriveInput;
+use crate::field_def::{Context, FieldDef};
 
 mod field_def;
-use field_def::{Context, FieldDef};
 
 #[proc_macro_derive(FixedWidth, attributes(fixed_width))]
 pub fn fixed_width(input: TokenStream) -> TokenStream {
@@ -153,7 +138,7 @@ fn build_field_def(field: &syn::Field) -> FieldDef {
         let range_parts = r
             .value
             .split("..")
-            .map(|s| s.parse::<usize>())
+            .map(str::parse)
             .filter_map(result::Result::ok)
             .collect::<Vec<usize>>();
 

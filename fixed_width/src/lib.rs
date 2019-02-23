@@ -30,7 +30,7 @@ fixed_width = "0.1"
 Then in the root of your project:
 
 ```
-extern crate fixed_width;
+use fixed_width;
 ```
 
 There is also the `fixed_width_derive` crate that provides a struct attribute syntax to ease deriving
@@ -60,11 +60,8 @@ let records: Vec<String> = reader.string_reader()
 Reading a `String` into a `Vec` of user defined structs:
 
 ```rust
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
-extern crate fixed_width;
-
+use serde_derive::Deserialize;
+use serde;
 use fixed_width::{Reader, FixedWidth, Field};
 use std::result;
 
@@ -95,25 +92,16 @@ fn main() {
 #![crate_name = "fixed_width"]
 #![deny(missing_docs)]
 
-extern crate serde;
-
-#[cfg(test)]
-#[macro_use]
-extern crate serde_derive;
-#[cfg(test)]
-extern crate serde_bytes;
-
-use std::ops::Range;
-use std::result;
-
-pub use de::{
+use std::{convert, ops::Range, result};
+pub use crate::de::{
     from_bytes, from_bytes_with_fields, from_str, from_str_with_fields, DeserializeError,
     Deserializer,
 };
-pub use error::Error;
-pub use reader::{ByteReader, Reader, StringReader};
-pub use ser::{to_bytes, to_string, to_writer, to_writer_with_fields, SerializeError, Serializer};
-pub use writer::{AsByteSlice, Writer};
+pub use crate::{
+    error::Error, reader::{ByteReader, Reader, StringReader},
+    ser::{to_bytes, to_string, to_writer, to_writer_with_fields, SerializeError, Serializer},
+    writer::{AsByteSlice, Writer},
+};
 
 mod de;
 mod error;
@@ -200,7 +188,7 @@ impl Field {
     /// assert_eq!(field.name, Some("thing".to_string()));
     /// ```
     pub fn name<T: Into<String>>(mut self, val: Option<T>) -> Self {
-        self.name = val.map(|val| val.into());
+        self.name = val.map(convert::Into::into);
         self
     }
 

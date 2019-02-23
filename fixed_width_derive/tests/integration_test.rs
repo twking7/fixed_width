@@ -1,12 +1,7 @@
-#[macro_use]
-extern crate fixed_width_derive;
-#[macro_use]
-extern crate serde_derive;
-extern crate fixed_width;
-extern crate serde;
-
+use fixed_width_derive::FixedWidth;
 use fixed_width::{DeserializeError, Deserializer, FixedWidth, Serializer, Reader, from_bytes};
 use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
 use std::result;
 
 #[derive(FixedWidth, Serialize, Deserialize)]
