@@ -13,6 +13,7 @@ pub struct FieldDef {
 
 pub struct Context {
     pub field: syn::Field,
+    pub skip: bool,
     pub metadata: HashMap<String, Metadata>,
 }
 
@@ -20,11 +21,10 @@ impl Context {
     pub fn from_field(field: &syn::Field) -> Self {
         let mut fixed_width_attr_seen = 0;
         let mut metadata = HashMap::new();
+        let mut skip = false;
 
         for attr in &field.attrs {
-            if attr.path != parse_quote!(fixed_width) {
-                continue;
-            } else {
+            if attr.path == parse_quote!(fixed_width) {
                 fixed_width_attr_seen += 1;
                 if fixed_width_attr_seen > 1 {
                     panic!(
@@ -32,39 +32,55 @@ impl Context {
                         field.ident.clone().unwrap().to_string(),
                     );
                 }
-            }
 
-            match attr.interpret_meta() {
-                Some(syn::Meta::List(syn::MetaList { ref nested, .. })) => {
+                match attr.interpret_meta() {
+                    Some(syn::Meta::List(syn::MetaList { ref nested, .. })) => {
+                        let meta_items: Vec<&syn::NestedMeta> = nested.iter().collect();
+
+                        for meta_item in meta_items {
+                            if let syn::NestedMeta::Meta(ref item) = meta_item {
+                                if let syn::Meta::NameValue(syn::MetaNameValue {
+                                    ref ident,
+                                    ref lit,
+                                    ..
+                                }) = item
+                                {
+                                    if let syn::Lit::Str(ref s) = lit {
+                                        let mdata = Metadata {
+                                            name: ident.clone().to_string(),
+                                            value: s.value().to_string(),
+                                        };
+                                        metadata.insert(ident.clone().to_string(), mdata);
+                                    } else {
+                                        panic!("fixed_width attribute values must be strings");
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+                    _ => unreachable!("Did not get a meta list"),
+                }
+            } else if attr.path == parse_quote!(serde) {
+                if let Some(syn::Meta::List(syn::MetaList { ref nested, .. })) = attr.interpret_meta() {
                     let meta_items: Vec<&syn::NestedMeta> = nested.iter().collect();
 
                     for meta_item in meta_items {
                         if let syn::NestedMeta::Meta(ref item) = meta_item {
-                            if let syn::Meta::NameValue(syn::MetaNameValue {
-                                ref ident,
-                                ref lit,
-                                ..
-                            }) = item
-                            {
-                                if let syn::Lit::Str(ref s) = lit {
-                                    let mdata = Metadata {
-                                        name: ident.clone().to_string(),
-                                        value: s.value().to_string(),
-                                    };
-                                    metadata.insert(ident.clone().to_string(), mdata);
-                                } else {
-                                    panic!("fixed_width attribute values must be strings");
+                            if let syn::Meta::Word(ident) = item {
+                                if ident.to_string() == "skip" {
+                                    skip = true;
                                 }
                             }
                         }
                     }
                 }
-                _ => unreachable!("Did not get a meta list"),
             }
         }
 
         Self {
             field: field.clone(),
+            skip,
             metadata,
         }
     }

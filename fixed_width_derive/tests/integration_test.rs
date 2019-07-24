@@ -46,6 +46,24 @@ struct Record2 {
     pub name: String,
 }
 
+#[derive(FixedWidth, Deserialize)]
+struct SkippedStuff {
+    #[fixed_width(range = "0..6")]
+    pub stuff1: String,
+    #[fixed_width(range = "6..12", pad_with = "0")]
+    pub stuff2: String,
+    #[fixed_width(range = "12..15", pad_with = "0")]
+    pub stuff3: usize,
+    #[serde(skip)]
+    pub skipped: i64,
+    #[fixed_width(range = "15..19")]
+    pub stuff4: usize,
+    #[fixed_width(range = "21..27", default = "foobar")]
+    pub stuff5: String,
+    #[fixed_width(range = "27..31", justify = "right")]
+    pub stuff6: String,
+}
+
 
 #[test]
 fn test_serialize() {
@@ -161,4 +179,18 @@ fn test_multiple_record_types() {
     }
 
     assert!(rec1 && rec2);
+}
+
+#[test]
+fn test_deserialize_with_skipped_fields() {
+    let fr = "   foo000bar234   9  foobar123 ".as_bytes();
+    let mut de = Deserializer::new(fr, SkippedStuff::fields());
+    let stuff = SkippedStuff::deserialize(&mut de).unwrap();
+
+    assert_eq!(stuff.stuff1, "foo");
+    assert_eq!(stuff.stuff2, "000bar");
+    assert_eq!(stuff.stuff3, 234);
+    assert_eq!(stuff.stuff4, 9);
+    assert_eq!(stuff.stuff5, "foobar");
+    assert_eq!(stuff.stuff6, "123");
 }
