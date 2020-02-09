@@ -2,7 +2,9 @@
 
 [![Build Status](https://travis-ci.org/twking7/fixed_width.svg?branch=master)](https://travis-ci.org/twking7/fixed_width)
 
-A fixed width data reader and writer library. Also supports [Serde](https://github.com/serde-rs/serde)
+A fixed width data reader and writer library. Also supports [Serde](https://github.com/serde-rs/serde).
+
+Fixed width in this case means that each line of the file is the same number of bytes. It supports unicode, but only if the unicode fits in the designated byte size of the record.
 
 ## Documentation
 
