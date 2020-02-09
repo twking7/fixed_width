@@ -1,8 +1,6 @@
+use crate::{error::Error, writer::Writer, Field, FixedWidth, Justify, Result};
 use serde::ser::{self, Error as SerError, Serialize};
-use std::{fmt, io, iter, vec, error::Error as StdError};
-use crate::{
-    error::Error, writer::Writer, Field, FixedWidth, Justify, Result,
-};
+use std::{error::Error as StdError, fmt, io, iter, vec};
 
 /// Serializes the given type that implements `FixedWidth` and `Serialize` to a `String`.
 ///
@@ -169,23 +167,13 @@ impl fmt::Display for SerializeError {
         match self {
             SerializeError::Message(ref e) => write!(f, "{}", e),
             SerializeError::Unsupported(ref e) => write!(f, "{}", e),
-            SerializeError::UnexpectedEndOfFields => write!(f, "{}", self.description()),
+            SerializeError::UnexpectedEndOfFields => write!(f, "{}", self.to_string()),
         }
     }
 }
 
 impl StdError for SerializeError {
-    fn description(&self) -> &str {
-        match self {
-            SerializeError::Message(e) => e.as_ref(),
-            SerializeError::Unsupported(e) => e.as_ref(),
-            SerializeError::UnexpectedEndOfFields => {
-                "defined fields were less than the record length"
-            }
-        }
-    }
-
-    fn cause(&self) -> Option<&StdError> {
+    fn cause(&self) -> Option<&dyn StdError> {
         None
     }
 }
@@ -510,10 +498,10 @@ fn pad(bytes: &[u8], field: &Field) -> Vec<u8> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use serde_derive::Serialize;
-    use serde_bytes::ByteBuf;
-    use std::collections::HashMap;
     use crate::{Field, FixedWidth, Writer};
+    use serde_bytes::ByteBuf;
+    use serde_derive::Serialize;
+    use std::collections::HashMap;
 
     #[test]
     fn bool_ser() {

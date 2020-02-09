@@ -11,9 +11,9 @@ edition = "2018"
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "0.4.27"
-syn = { version = "0.15.26", features = ["extra-traits"] }
-quote = "0.6"
+proc-macro2 = "1.0"
+syn = { version = "1.0", features = ["extra-traits", "parsing"] }
+quote = "1.0"
 fixed_width = { version = "0.3.0" }
 
 [dev-dependencies]

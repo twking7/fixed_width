@@ -33,19 +33,20 @@ impl Context {
                     );
                 }
 
-                match attr.interpret_meta() {
-                    Some(syn::Meta::List(syn::MetaList { ref nested, .. })) => {
+                match attr.parse_meta() {
+                    Ok(syn::Meta::List(syn::MetaList { ref nested, .. })) => {
                         let meta_items: Vec<&syn::NestedMeta> = nested.iter().collect();
 
                         for meta_item in meta_items {
                             if let syn::NestedMeta::Meta(ref item) = meta_item {
                                 if let syn::Meta::NameValue(syn::MetaNameValue {
-                                    ref ident,
+                                    ref path,
                                     ref lit,
                                     ..
                                 }) = item
                                 {
                                     if let syn::Lit::Str(ref s) = lit {
+                                        let ident = path.get_ident().unwrap().clone();
                                         let mdata = Metadata {
                                             name: ident.clone().to_string(),
                                             value: s.value().to_string(),
@@ -55,21 +56,22 @@ impl Context {
                                         panic!("fixed_width attribute values must be strings");
                                     }
                                 }
-
                             }
                         }
                     }
                     _ => unreachable!("Did not get a meta list"),
                 }
             } else if attr.path == parse_quote!(serde) {
-                if let Some(syn::Meta::List(syn::MetaList { ref nested, .. })) = attr.interpret_meta() {
+                if let Ok(syn::Meta::List(syn::MetaList { ref nested, .. })) = attr.parse_meta() {
                     let meta_items: Vec<&syn::NestedMeta> = nested.iter().collect();
 
                     for meta_item in meta_items {
                         if let syn::NestedMeta::Meta(ref item) = meta_item {
-                            if let syn::Meta::Word(ident) = item {
-                                if ident.to_string() == "skip" {
-                                    skip = true;
+                            if let syn::Meta::Path(syn::Path { ref segments, .. }) = item {
+                                for segment in segments {
+                                    if segment.ident.to_string() == "skip" {
+                                        skip = true;
+                                    }
                                 }
                             }
                         }

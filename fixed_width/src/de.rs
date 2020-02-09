@@ -1,11 +1,9 @@
-use serde::{
-    self, de::{self, Deserialize, Error, IntoDeserializer, Visitor},
-};
-use std::{
-    convert, fmt, iter, num, result::Result, str, vec,
-    error::Error as StdError,
-};
 use crate::{error, Field, FixedWidth};
+use serde::{
+    self,
+    de::{self, Deserialize, Error, IntoDeserializer, Visitor},
+};
+use std::{convert, error::Error as StdError, fmt, iter, num, result::Result, str, vec};
 
 /// Deserializes a `&str` into the given type that implements `FixedWidth` and `Deserialize`.
 ///
@@ -165,21 +163,7 @@ impl serde::de::Error for DeserializeError {
 }
 
 impl StdError for DeserializeError {
-    fn description(&self) -> &str {
-        match self {
-            DeserializeError::Message(e) => e.as_ref(),
-            DeserializeError::Unsupported(e) => e.as_ref(),
-            DeserializeError::UnexpectedEndOfRecord => {
-                "byte length of record was less than defined length"
-            }
-            DeserializeError::InvalidUtf8(e) => e.description(),
-            DeserializeError::ParseBoolError(e) => e.description(),
-            DeserializeError::ParseIntError(e) => e.description(),
-            DeserializeError::ParseFloatError(e) => e.description(),
-        }
-    }
-
-    fn cause(&self) -> Option<&StdError> {
+    fn cause(&self) -> Option<&dyn StdError> {
         match self {
             DeserializeError::Message(_e) => None,
             DeserializeError::Unsupported(_e) => None,
@@ -641,11 +625,11 @@ impl<'a, 'de: 'a> de::VariantAccess<'de> for &'a mut Deserializer<'de> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use serde::Deserialize;
-    use serde_derive::Deserialize;
-    use serde_bytes::ByteBuf;
-    use std::collections::HashMap;
     use crate::{Field, FixedWidth};
+    use serde::Deserialize;
+    use serde_bytes::ByteBuf;
+    use serde_derive::Deserialize;
+    use std::collections::HashMap;
 
     #[test]
     fn bool_de() {
@@ -723,7 +707,7 @@ mod test {
         let fields = vec![Field::default().range(0..6)];
         let s: Vec<u8> = from_bytes_with_fields::<ByteBuf>(b"foobar", fields)
             .unwrap()
-            .into();
+            .into_vec();
         assert_eq!(s, b"foobar".to_vec());
     }
 

@@ -1,5 +1,5 @@
 use crate::{de::DeserializeError, ser::SerializeError};
-use std::{fmt, io, string, error::Error as StdError};
+use std::{error::Error as StdError, fmt, io, string};
 
 /// An error produced while parsing fixed width data.
 #[derive(Debug)]
@@ -44,16 +44,7 @@ impl From<SerializeError> for Error {
 }
 
 impl StdError for Error {
-    fn description(&self) -> &str {
-        match self {
-            Error::IOError(e) => e.description(),
-            Error::FormatError(e) => e.description(),
-            Error::DeserializeError(e) => e.description(),
-            Error::SerializeError(e) => e.description(),
-        }
-    }
-
-    fn cause(&self) -> Option<&StdError> {
+    fn cause(&self) -> Option<&dyn StdError> {
         match self {
             Error::IOError(ref e) => Some(e),
             Error::FormatError(ref e) => Some(e),
