@@ -19,7 +19,7 @@ Add as a dependency:
 fixed_width = "0.4"
 
 # Optionally, if you are running Rust version 1.30.0 or above and want to derive fixed width field definitions:
-fixed_width_derive = "0.3"
+fixed_width_derive = "0.4"
 ```
 
 in the root of your crate:
