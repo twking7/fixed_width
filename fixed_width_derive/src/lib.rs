@@ -16,10 +16,11 @@ fixed_width_derive = "0.3"
 # Usage
 
 ```rust
+use serde_derive::Deserialize;
 use fixed_width_derive::FixedWidth;
 use fixed_width::FixedWidth;
 
-#[derive(FixedWidth)]
+#[derive(FixedWidth, Deserialize)]
 struct Person {
     #[fixed_width(range = "0..6")]
     pub name: String,
@@ -27,6 +28,8 @@ struct Person {
     pub age: usize,
     #[fixed_width(range = "9..11", name = "height_cm", justify = "right")]
     pub height: usize,
+    #[serde(skip)]
+    pub gender: String,
 }
 # fn main() {}
 ```
@@ -73,6 +76,9 @@ left or right once it has been converted to bytes.
 ### `name = "s"`
 Defaults to the name of the struct field. Indicates the name of the field. Useful if you wish to deserialize
 fixed width data into a HashMap.
+
+### `skip`
+Skips the given field.
 !*/
 
 extern crate proc_macro;
@@ -109,6 +115,7 @@ fn impl_fixed_width(ast: &DeriveInput) -> TokenStream {
 
     let tokens: Vec<proc_macro2::TokenStream> = fields
         .iter()
+        .filter(should_skip)
         .map(build_field_def)
         .map(build_fixed_width_field)
         .collect();
@@ -124,6 +131,10 @@ fn impl_fixed_width(ast: &DeriveInput) -> TokenStream {
     };
 
     quote.into()
+}
+
+fn should_skip(field: &&syn::Field) -> bool {
+    !Context::from_field(*field).skip
 }
 
 fn build_field_def(field: &syn::Field) -> FieldDef {
