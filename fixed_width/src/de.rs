@@ -565,19 +565,7 @@ impl<'a, 'de: 'a> de::EnumAccess<'de> for &'a mut Deserializer<'de> {
         self,
         seed: S,
     ) -> Result<(S::Value, Self::Variant), Self::Error> {
-        let name = match self.peek_field() {
-            Some(field) => match field.name {
-                Some(ref name) => name.clone(),
-                None => {
-                    return Err(DeserializeError::Message(format!(
-                        "no name for field with range {}..{}",
-                        field.range.start, field.range.end
-                    )))
-                }
-            },
-            None => return Err(DeserializeError::UnexpectedEndOfRecord),
-        };
-        seed.deserialize(name.into_deserializer())
+        seed.deserialize(self.next_str()?.into_deserializer())
             .map(|v| (v, self))
     }
 }
@@ -827,13 +815,18 @@ mod test {
     #[serde(untagged)]
     enum UntaggedEnum {
         Int(usize),
+        Float(f64),
     }
 
     #[test]
     fn untagged_enum_de() {
-        let fields = vec![Field::default().range(0..3).name(Some("Int"))];
-        let e: UntaggedEnum = from_bytes_with_fields(b"111", fields).unwrap();
-        assert_eq!(e, UntaggedEnum::Int(111));
+        let fields = vec![Field::default().range(0..3)];
+        let e_int: UntaggedEnum = from_bytes_with_fields(b"111", fields).unwrap();
+        assert_eq!(e_int, UntaggedEnum::Int(111));
+
+        let fields = vec![Field::default().range(0..3)];
+        let e_float: UntaggedEnum = from_bytes_with_fields(b"1.1", fields).unwrap();
+        assert_eq!(e_float, UntaggedEnum::Float(1.1));
     }
 
     #[derive(Debug, PartialEq, Deserialize)]
@@ -843,11 +836,23 @@ mod test {
 
     #[test]
     fn tagged_enum_de() {
-        let fields = vec![Field::default().range(0..3).name(Some("a"))];
+        let fields = vec![Field::default().range(0..3)];
         let e: TaggedEnum = from_bytes_with_fields(b"111", fields).unwrap();
         assert_eq!(
             e,
             TaggedEnum {
+                a: UntaggedEnum::Int(111)
+            }
+        );
+    }
+
+    #[test]
+    fn tagged_enum_hashmap_de() {
+        let fields = vec![Field::default().range(0..3).name(Some("a"))];
+        let h: HashMap<String, TaggedEnum> = from_bytes_with_fields(b"111", fields).unwrap();
+        assert_eq!(
+            h.get("a").unwrap(),
+            &TaggedEnum {
                 a: UntaggedEnum::Int(111)
             }
         );
