@@ -2,7 +2,7 @@
 
 [Build Status]: https://travis-ci.org/twking7/fixed_width.svg?branch=master
 [travis]: https://travis-ci.org/twking7/fixed_width
-[Latest Version]: https://img.shields.io/badge/crates.io-0.4.0-blue.svg
+[Latest Version]: https://img.shields.io/badge/crates.io-0.4.1-blue.svg
 [crates.io]: https://docs.rs/fixed_width
 
 A fixed width data reader and writer library. Also supports [Serde](https://github.com/serde-rs/serde).
