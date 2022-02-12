@@ -1,5 +1,9 @@
-use std::{fs, io::{self, Read}, path::Path};
 use crate::{error::Error, LineBreak, Result};
+use std::{
+    fs,
+    io::{self, Read},
+    path::Path,
+};
 
 const BUFFER_SIZE: usize = 8 * (1 << 10);
 
@@ -401,11 +405,12 @@ where
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod test {
     use super::*;
+    use crate::{Field, FixedWidth};
     use serde_derive::Deserialize;
     use std::result;
-    use crate::{Field, FixedWidth};
 
     #[test]
     fn read_next_record() {
@@ -514,7 +519,7 @@ mod test {
         }
     }
 
-    #[derive(Debug, Deserialize)]
+    #[derive(Deserialize)]
     struct Test {
         a: String,
         b: String,

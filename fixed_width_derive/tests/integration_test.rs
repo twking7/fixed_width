@@ -1,5 +1,5 @@
+use fixed_width::{from_bytes, DeserializeError, Deserializer, FixedWidth, Reader, Serializer};
 use fixed_width_derive::FixedWidth;
-use fixed_width::{DeserializeError, Deserializer, FixedWidth, Serializer, Reader, from_bytes};
 use serde::{Deserialize, Serialize};
 use serde_derive::{Deserialize, Serialize};
 use std::result;
@@ -31,6 +31,7 @@ struct Optionals {
 }
 
 #[derive(FixedWidth, Deserialize)]
+#[allow(dead_code)]
 struct Record1 {
     #[fixed_width(range = "0..1")]
     pub record_type: usize,
@@ -39,6 +40,7 @@ struct Record1 {
 }
 
 #[derive(FixedWidth, Deserialize)]
+#[allow(dead_code)]
 struct Record2 {
     #[fixed_width(range = "0..1")]
     pub record_type: usize,
@@ -47,6 +49,7 @@ struct Record2 {
 }
 
 #[derive(FixedWidth, Deserialize)]
+#[allow(dead_code)]
 struct SkippedStuff {
     #[fixed_width(range = "0..6")]
     pub stuff1: String,
@@ -63,7 +66,6 @@ struct SkippedStuff {
     #[fixed_width(range = "27..31", justify = "right")]
     pub stuff6: String,
 }
-
 
 #[test]
 fn test_serialize() {
@@ -167,12 +169,12 @@ fn test_multiple_record_types() {
                 let Record1 { state, .. } = from_bytes(bytes).unwrap();
                 rec1 = true;
                 assert_eq!(state, "OHIO");
-            },
+            }
             Some(b'1') => {
                 let Record2 { name, .. } = from_bytes(bytes).unwrap();
                 rec2 = true;
                 assert_eq!(name, "BOB");
-            },
+            }
             Some(_) => assert!(false, "unexpected record type"),
             None => assert!(false, "unexpected None"),
         }

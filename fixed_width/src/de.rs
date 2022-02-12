@@ -322,13 +322,14 @@ impl<'r, 'de> Deserializer<'r> {
 macro_rules! deserialize_int {
     ($de_fn:ident, $visit_fn:ident) => {
         fn $de_fn<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-            let i = self.next_str()?
+            let i = self
+                .next_str()?
                 .parse()
                 .map_err(DeserializeError::ParseIntError)?;
 
             visitor.$visit_fn(i)
         }
-    }
+    };
 }
 
 impl<'a, 'de: 'a> serde::Deserializer<'de> for &'a mut Deserializer<'de> {
@@ -565,19 +566,7 @@ impl<'a, 'de: 'a> de::EnumAccess<'de> for &'a mut Deserializer<'de> {
         self,
         seed: S,
     ) -> Result<(S::Value, Self::Variant), Self::Error> {
-        let name = match self.peek_field() {
-            Some(field) => match field.name {
-                Some(ref name) => name.clone(),
-                None => {
-                    return Err(DeserializeError::Message(format!(
-                        "no name for field with range {}..{}",
-                        field.range.start, field.range.end
-                    )))
-                }
-            },
-            None => return Err(DeserializeError::UnexpectedEndOfRecord),
-        };
-        seed.deserialize(name.into_deserializer())
+        seed.deserialize(self.next_str()?.into_deserializer())
             .map(|v| (v, self))
     }
 }
@@ -911,5 +900,31 @@ mod test {
         let tc: TestBool = from_bytes_with_fields(b"  ", fields).unwrap();
 
         assert_eq!(tc.a, false);
+    }
+
+    #[derive(Debug, Deserialize, PartialEq)]
+    #[serde(rename_all = "lowercase")]
+    enum FooEnum {
+        Foo,
+        Bar,
+        Baz,
+    }
+
+    #[derive(Deserialize, Debug, PartialEq)]
+    struct Foo {
+        value: FooEnum,
+    }
+
+    #[test]
+    fn bugged_enum() {
+        let fields = vec![Field::default().range(0..3).name(Some("value"))];
+        let de: Foo = from_str_with_fields("bar", fields).unwrap();
+
+        assert_eq!(
+            de,
+            Foo {
+                value: FooEnum::Bar
+            }
+        )
     }
 }
