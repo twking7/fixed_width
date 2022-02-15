@@ -94,8 +94,8 @@ fn main() {
 
 use std::{convert, ops::Range, result};
 pub use crate::de::{
-    from_bytes, from_bytes_with_fields, from_str, from_str_with_fields, DeserializeError,
-    Deserializer,
+    deserialize, from_bytes, from_bytes_with_fields, from_str, from_str_with_fields,
+    DeserializeError, Deserializer,
 };
 pub use crate::{
     error::Error, reader::{ByteReader, Reader, StringReader},
