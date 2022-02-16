@@ -611,6 +611,83 @@ impl<'a, 'de: 'a> de::VariantAccess<'de> for &'a mut Deserializer<'de> {
     }
 }
 
+/// Deserialization helper for type that implements `FixedWidth` and `Deserialize`.
+///
+/// ### Example
+///
+/// ```rust
+/// use serde_derive::Deserialize;
+/// use serde;
+/// use fixed_width::{Field, FixedWidth};
+///
+/// #[derive(Debug, Deserialize)]
+/// pub struct Point {
+///     x: u8,
+///     y: u8,
+/// }
+///
+/// impl FixedWidth for Point {
+///     fn fields() -> Vec<Field> {
+///         vec![
+///             Field::default().range(0..4),
+///             Field::default().range(4..8),
+///         ]
+///     }
+/// }
+///
+/// #[derive(Debug, Deserialize)]
+/// struct Line {
+///     #[serde(with = "fixed_width")]
+///     start: Point,
+///     #[serde(with = "fixed_width")]
+///     end: Point,
+/// }
+///
+/// impl FixedWidth for Line {
+///     fn fields() -> Vec<Field> {
+///         vec![
+///             Field::default().range(0..8),
+///             Field::default().range(8..16),
+///         ]
+///     }
+/// }
+///
+/// let s = "   0   1 253 254";
+/// let line: Line = fixed_width::from_str(s).unwrap();
+///
+/// assert_eq!(line.start.x, 0);
+/// assert_eq!(line.start.y, 1);
+/// assert_eq!(line.end.x, 253);
+/// assert_eq!(line.end.y, 254);
+/// ```
+pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: FixedWidth + Deserialize<'de>,
+{
+    struct FixedWidthVisitor<T>(std::marker::PhantomData<T>);
+    impl<'de, T> Visitor<'de> for FixedWidthVisitor<T>
+    where
+        T: FixedWidth + Deserialize<'de>,
+    {
+        type Value = T;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("invalid value")
+        }
+
+        fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            from_bytes_with_fields(v, Self::Value::fields())
+                .map_err(|e| serde::de::Error::custom(e.to_string()))
+        }
+    }
+
+    deserializer.deserialize_bytes(FixedWidthVisitor(std::marker::PhantomData))
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
