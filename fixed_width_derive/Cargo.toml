@@ -1,6 +1,6 @@
 [package]
 name = "fixed_width_derive"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Tom King <twking7@gmail.com>"]
 repository = "https://github.com/twking7/fixed_width/fixed_width_derive"
 description = "Derive trait for use with the fixed_width crate."
@@ -14,7 +14,7 @@ proc-macro = true
 proc-macro2 = "1.0"
 syn = { version = "1.0", features = ["extra-traits", "parsing"] }
 quote = "1.0"
-fixed_width = { version = "0.4.1" }
+fixed_width = { version = "0.4.2" }
 
 [dev-dependencies]
 serde = "1.0"
