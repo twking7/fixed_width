@@ -993,7 +993,7 @@ mod test {
     }
 
     #[test]
-    fn bugged_enum() {
+    fn test_lowercase_serde_option_for_enum() {
         let fields = vec![Field::default().range(0..3).name(Some("value"))];
         let de: Foo = from_str_with_fields("bar", fields).unwrap();
 
