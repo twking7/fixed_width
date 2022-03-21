@@ -154,6 +154,8 @@ pub enum DeserializeError {
     ParseIntError(num::ParseIntError),
     /// A float value could not be parsed for this field.
     ParseFloatError(num::ParseFloatError),
+    /// Will never implemente
+    WontImplement,
 }
 
 impl serde::de::Error for DeserializeError {
@@ -172,6 +174,7 @@ impl StdError for DeserializeError {
             DeserializeError::ParseBoolError(e) => Some(e),
             DeserializeError::ParseIntError(e) => Some(e),
             DeserializeError::ParseFloatError(e) => Some(e),
+            DeserializeError::WontImplement => None,
         }
     }
 }
@@ -188,6 +191,7 @@ impl fmt::Display for DeserializeError {
             DeserializeError::ParseBoolError(ref e) => write!(f, "{}", e),
             DeserializeError::ParseIntError(ref e) => write!(f, "{}", e),
             DeserializeError::ParseFloatError(ref e) => write!(f, "{}", e),
+            DeserializeError::WontImplement => write!(f, "This will never be implemented."),
         }
     }
 }
@@ -488,29 +492,17 @@ impl<'a, 'de: 'a> serde::Deserializer<'de> for &'a mut Deserializer<'de> {
         self.deserialize_str(visitor)
     }
 
-    fn deserialize_ignored_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-        self.deserialize_any(visitor)
+    // Not supported.
+    fn deserialize_ignored_any<V: Visitor<'de>>(
+        self,
+        _visitor: V,
+    ) -> Result<V::Value, Self::Error> {
+        Err(DeserializeError::WontImplement)
     }
 
-    fn deserialize_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-        let s = self.next_str()?;
-
-        if s.len() == 1 {
-            if s == "1" {
-                visitor.visit_bool(true)
-            } else if s == "0" {
-                visitor.visit_bool(false)
-            } else {
-                let c = s.chars().next().unwrap_or(' ');
-                visitor.visit_char(c)
-            }
-        } else if let Ok(n) = s.parse::<i64>() {
-            visitor.visit_i64(n)
-        } else if let Ok(n) = s.parse::<f64>() {
-            visitor.visit_f64(n)
-        } else {
-            visitor.visit_str(&s)
-        }
+    // FixedWidth is not self describing format should avoid this method.
+    fn deserialize_any<V: Visitor<'de>>(self, _visitor: V) -> Result<V::Value, Self::Error> {
+        Err(DeserializeError::WontImplement)
     }
 }
 
@@ -890,33 +882,15 @@ mod test {
     }
 
     #[derive(Debug, PartialEq, Deserialize)]
-    #[serde(untagged)]
-    enum UntaggedEnum {
-        Int(usize),
+    enum Enum {
+        Foo,
     }
 
     #[test]
-    fn untagged_enum_de() {
-        let fields = vec![Field::default().range(0..3).name(Some("Int"))];
-        let e: UntaggedEnum = from_bytes_with_fields(b"111", fields).unwrap();
-        assert_eq!(e, UntaggedEnum::Int(111));
-    }
-
-    #[derive(Debug, PartialEq, Deserialize)]
-    struct TaggedEnum {
-        a: UntaggedEnum,
-    }
-
-    #[test]
-    fn tagged_enum_de() {
-        let fields = vec![Field::default().range(0..3).name(Some("a"))];
-        let e: TaggedEnum = from_bytes_with_fields(b"111", fields).unwrap();
-        assert_eq!(
-            e,
-            TaggedEnum {
-                a: UntaggedEnum::Int(111)
-            }
-        );
+    fn enum_de() {
+        let fields = vec![Field::default().range(0..3)];
+        let e: Enum = from_bytes_with_fields(b"Foo", fields).unwrap();
+        assert_eq!(e, Enum::Foo);
     }
 
     #[test]
@@ -939,18 +913,6 @@ mod test {
         assert_eq!(test.b, "abc");
         assert_eq!(test.c, 9876.0);
         assert_eq!(test.d, Some(12));
-    }
-
-    #[test]
-    fn test_from_str_with_fields() {
-        let fields = vec![Field::default().range(0..3).name(Some("a"))];
-        let e: TaggedEnum = from_str_with_fields("111", fields).unwrap();
-        assert_eq!(
-            e,
-            TaggedEnum {
-                a: UntaggedEnum::Int(111)
-            }
-        );
     }
 
     #[derive(Debug, PartialEq, Deserialize)]
