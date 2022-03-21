@@ -832,10 +832,10 @@ mod test {
     impl FixedWidth for Test1 {
         fn fields() -> Vec<Field> {
             vec![
-                Field::default().range(0..3).name(Some("a")),
-                Field::default().range(3..6).name(Some("b")),
+                Field::default().range(0..3),
+                Field::default().range(3..6),
                 Field::default().range(6..10),
-                Field::default().range(10..13).name(Some("d")),
+                Field::default().range(10..13),
             ]
         }
     }
@@ -871,7 +871,15 @@ mod test {
     #[test]
     fn hashmap_de() {
         let input = b"123abc9876 12";
-        let mut de = Deserializer::new(input, Test1::fields());
+        let mut de = Deserializer::new(
+            input,
+            vec![
+                Field::default().range(0..3).name(Some("a")),
+                Field::default().range(3..6).name(Some("b")),
+                Field::default().range(6..10),
+                Field::default().range(10..13).name(Some("d")),
+            ],
+        );
 
         let test: HashMap<String, String> = HashMap::deserialize(&mut de).unwrap();
 
@@ -956,7 +964,7 @@ mod test {
 
     #[test]
     fn test_lowercase_serde_option_for_enum() {
-        let fields = vec![Field::default().range(0..3).name(Some("value"))];
+        let fields = vec![Field::default().range(0..3)];
         let de: Foo = from_str_with_fields("bar", fields).unwrap();
 
         assert_eq!(
