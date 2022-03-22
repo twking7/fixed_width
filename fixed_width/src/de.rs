@@ -1,4 +1,4 @@
-use crate::{error, Field, FixedWidth};
+use crate::{error, FieldSet, FixedWidth};
 use serde::{
     self,
     de::{self, Deserialize, Error, IntoDeserializer, Visitor},
@@ -12,7 +12,7 @@ use std::{convert, error::Error as StdError, fmt, iter, num, result::Result, str
 /// ```rust
 /// use serde_derive::Deserialize;
 /// use serde;
-/// use fixed_width::{Field, FixedWidth};
+/// use fixed_width::{Field, FieldSet, FixedWidth};
 ///
 /// #[derive(Deserialize)]
 /// struct Record {
@@ -22,26 +22,28 @@ use std::{convert, error::Error as StdError, fmt, iter, num, result::Result, str
 ///
 /// impl FixedWidth for Record {
 ///     fn fields() -> Vec<Field> {
+///         unimplemented!()
+///     }
+///
+///     fn fieldset() -> Vec<FieldSet> {
 ///         vec![
-///             Field::default().range(0..4),
-///             Field::default().range(4..8),
+///             FieldSet::new_field(0..4),
+///             FieldSet::new_field(4..8),
 ///         ]
 ///     }
 /// }
 ///
-/// fn main() {
-///     let s = "Carl1234";
-///     let record: Record = fixed_width::from_str(&s).unwrap();
+/// let s = "Carl1234";
+/// let record: Record = fixed_width::from_str(&s).unwrap();
 ///
-///     assert_eq!(record.name, "Carl");
-///     assert_eq!(record.room, 1234);
-/// }
+/// assert_eq!(record.name, "Carl");
+/// assert_eq!(record.room, 1234);
 /// ```
 pub fn from_str<'de, T>(s: &'de str) -> Result<T, error::Error>
 where
     T: FixedWidth + Deserialize<'de>,
 {
-    from_str_with_fields(s, T::fields())
+    from_str_with_fields(s, T::fieldset())
 }
 
 /// Deserializes a `&[u8]` into the given type that implements `FixedWidth` and `Deserialize`.
@@ -51,7 +53,7 @@ where
 /// ```rust
 /// use serde_derive::Deserialize;
 /// use serde;
-/// use fixed_width::{Field, FixedWidth};
+/// use fixed_width::{Field, FieldSet, FixedWidth};
 ///
 /// #[derive(Deserialize)]
 /// struct Record {
@@ -61,26 +63,28 @@ where
 ///
 /// impl FixedWidth for Record {
 ///     fn fields() -> Vec<Field> {
+///         unimplemented!()
+///     }
+///
+///     fn fieldset() -> Vec<FieldSet> {
 ///         vec![
-///             Field::default().range(0..4),
-///             Field::default().range(4..8),
+///             FieldSet::new_field(0..4),
+///             FieldSet::new_field(4..8),
 ///         ]
 ///     }
 /// }
 ///
-/// fn main() {
-///     let b = b"Carl1234";
-///     let record: Record = fixed_width::from_bytes(b).unwrap();
+/// let b = b"Carl1234";
+/// let record: Record = fixed_width::from_bytes(b).unwrap();
 ///
-///     assert_eq!(record.name, "Carl");
-///     assert_eq!(record.room, 1234);
-/// }
+/// assert_eq!(record.name, "Carl");
+/// assert_eq!(record.room, 1234);
 /// ```
 pub fn from_bytes<'de, T>(b: &'de [u8]) -> Result<T, error::Error>
 where
     T: FixedWidth + Deserialize<'de>,
 {
-    from_bytes_with_fields(b, T::fields())
+    from_bytes_with_fields(b, T::fieldset())
 }
 
 /// Deserializes `&str` data to the given writer using the provided `Field`s.
@@ -89,11 +93,11 @@ where
 ///
 /// ```rust
 /// use std::collections::HashMap;
-/// use fixed_width::{Field, from_str_with_fields};
+/// use fixed_width::{Field, FieldSet, from_str_with_fields};
 ///
 /// let fields = vec![
-///     Field::default().range(0..4).name(Some("numbers")),
-///     Field::default().range(4..8).name(Some("letters")),
+///     FieldSet::new_field(0..4).name("numbers"),
+///     FieldSet::new_field(4..8).name("letters"),
 /// ];
 /// let mut s = "1234abcd";
 ///
@@ -101,7 +105,7 @@ where
 /// assert_eq!(h.get("numbers").unwrap(), "1234");
 /// assert_eq!(h.get("letters").unwrap(), "abcd");
 /// ```
-pub fn from_str_with_fields<'de, T>(s: &'de str, fields: Vec<Field>) -> Result<T, error::Error>
+pub fn from_str_with_fields<'de, T>(s: &'de str, fields: Vec<FieldSet>) -> Result<T, error::Error>
 where
     T: Deserialize<'de>,
 {
@@ -114,11 +118,11 @@ where
 ///
 /// ```rust
 /// use std::collections::HashMap;
-/// use fixed_width::{Field, from_bytes_with_fields};
+/// use fixed_width::{Field, FieldSet, from_bytes_with_fields};
 ///
 /// let fields = vec![
-///     Field::default().range(0..4).name(Some("numbers")),
-///     Field::default().range(4..8).name(Some("letters")),
+///     FieldSet::new_field(0..4).name("numbers"),
+///     FieldSet::new_field(4..8).name("letters"),
 /// ];
 /// let mut bytes = b"1234abcd";
 ///
@@ -128,7 +132,7 @@ where
 /// ```
 pub fn from_bytes_with_fields<'de, T>(
     bytes: &'de [u8],
-    fields: Vec<Field>,
+    fields: Vec<FieldSet>,
 ) -> Result<T, error::Error>
 where
     T: Deserialize<'de>,
@@ -223,7 +227,7 @@ impl From<num::ParseFloatError> for DeserializeError {
 /// A deserialized for fixed width data. Reads from the given bytes using the provided field
 /// definitions to determine how many bytes to read for each deserialized value.
 pub struct Deserializer<'r> {
-    fields: iter::Peekable<vec::IntoIter<Field>>,
+    fields: iter::Peekable<vec::IntoIter<FieldSet>>,
     input: &'r [u8],
 }
 
@@ -234,28 +238,26 @@ impl<'r, 'de> Deserializer<'r> {
     ///
     /// ```rust
     /// use serde;
-    /// use fixed_width::{Deserializer, Field};
+    /// use fixed_width::{Field, FieldSet, Deserializer};
     /// use serde::Deserialize;
     /// use std::collections::HashMap;
     ///
-    /// fn main() {
-    ///     let input = b"1234abcd99";
-    ///     let fields = vec![
-    ///         Field::default().range(0..4).name(Some("numbers")),
-    ///         Field::default().range(4..8).name(Some("letters")),
-    ///         Field::default().range(8..10),
-    ///     ];
+    /// let input = b"1234abcd99";
+    /// let fields = vec![
+    ///     FieldSet::new_field(0..4).name("numbers"),
+    ///     FieldSet::new_field(4..8).name("letters"),
+    ///     FieldSet::new_field(8..10),
+    /// ];
     ///
-    ///     let mut de = Deserializer::new(input, fields);
-    ///     let h: HashMap<String, String> = HashMap::deserialize(&mut de).unwrap();
+    /// let mut de = Deserializer::new(input, fields);
+    /// let h: HashMap<String, String> = HashMap::deserialize(&mut de).unwrap();
     ///
-    ///     assert_eq!(h.get("numbers").unwrap(), "1234");
-    ///     assert_eq!(h.get("letters").unwrap(), "abcd");
-    ///     // If no name is supplied, the byte range is used as the key instead.
-    ///     assert_eq!(h.get("8..10").unwrap(), "99");
-    /// }
+    /// assert_eq!(h.get("numbers").unwrap(), "1234");
+    /// assert_eq!(h.get("letters").unwrap(), "abcd");
+    /// // If no name is supplied, the byte range is used as the key instead.
+    /// assert_eq!(h.get("8..10").unwrap(), "99");
     /// ```
-    pub fn new(input: &'r [u8], fields: Vec<Field>) -> Self {
+    pub fn new(input: &'r [u8], fields: Vec<FieldSet>) -> Self {
         Self {
             fields: fields.into_iter().peekable(),
             input,
@@ -267,9 +269,9 @@ impl<'r, 'de> Deserializer<'r> {
     /// ### Example
     ///
     /// ```rust
-    /// use fixed_width::{Deserializer, Field, Reader};
+    /// use fixed_width::{Field, FieldSet, Deserializer, Reader};
     ///
-    /// let fields = vec![Field::default().range(0..3)];
+    /// let fields = vec![FieldSet::new_field(0..3)];
     /// let de = Deserializer::new(b"foobar", fields);
     ///
     /// assert_eq!(de.get_ref(), b"foobar");
@@ -278,7 +280,7 @@ impl<'r, 'de> Deserializer<'r> {
         self.input
     }
 
-    fn peek_field(&mut self) -> Option<&Field> {
+    fn peek_field(&mut self) -> Option<&FieldSet> {
         self.fields.peek()
     }
 
@@ -288,24 +290,26 @@ impl<'r, 'de> Deserializer<'r> {
 
     fn peek_bytes(&mut self) -> Result<&'r [u8], DeserializeError> {
         let field = match self.fields.peek() {
-            Some(field) => field,
+            Some(FieldSet::Field(field)) => field,
+            Some(_) => return Err(DeserializeError::UnexpectedEndOfRecord),
             None => return Err(DeserializeError::UnexpectedEndOfRecord),
         };
 
         match self.input.get(field.range.clone()) {
-            Some(ref bytes) => Ok(bytes),
+            Some(bytes) => Ok(bytes),
             None => Err(DeserializeError::UnexpectedEndOfRecord),
         }
     }
 
     fn next_bytes(&mut self) -> Result<&'r [u8], DeserializeError> {
         let field = match self.fields.next() {
-            Some(field) => field,
+            Some(FieldSet::Field(field)) => field,
+            Some(_) => return Err(DeserializeError::UnexpectedEndOfRecord),
             None => return Err(DeserializeError::UnexpectedEndOfRecord),
         };
 
-        match self.input.get(field.range.clone()) {
-            Some(ref bytes) => Ok(bytes),
+        match self.input.get(field.range) {
+            Some(bytes) => Ok(bytes),
             None => Err(DeserializeError::UnexpectedEndOfRecord),
         }
     }
@@ -388,7 +392,7 @@ impl<'a, 'de: 'a> serde::Deserializer<'de> for &'a mut Deserializer<'de> {
     }
 
     fn deserialize_string<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-        self.next_str().and_then(|s| visitor.visit_borrowed_str(&s))
+        self.next_str().and_then(|s| visitor.visit_borrowed_str(s))
     }
 
     fn deserialize_char<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
@@ -513,10 +517,17 @@ impl<'a, 'de: 'a> de::SeqAccess<'de> for &'a mut Deserializer<'de> {
         &mut self,
         seed: S,
     ) -> Result<Option<S::Value>, Self::Error> {
-        if self.done() {
-            Ok(None)
-        } else {
-            seed.deserialize(&mut **self).map(Some)
+        match self.fields.peek() {
+            Some(FieldSet::Field(_)) => seed.deserialize(&mut **self).map(Some),
+            Some(FieldSet::FieldSeq(_)) => {
+                if let FieldSet::FieldSeq(fields) = self.fields.next().unwrap() {
+                    let mut de = Deserializer::new(self.input, fields);
+                    seed.deserialize(&mut de).map(Some)
+                } else {
+                    unreachable!()
+                }
+            }
+            None => Ok(None),
         }
     }
 }
@@ -532,10 +543,11 @@ impl<'a, 'de: 'a> de::MapAccess<'de> for &'a mut Deserializer<'de> {
             Ok(None)
         } else {
             let name = match self.peek_field() {
-                Some(f) => f
+                Some(FieldSet::Field(f)) => f
                     .name
                     .clone()
                     .unwrap_or_else(|| format!("{}..{}", f.range.start, f.range.end)),
+                Some(_) => return Err(DeserializeError::UnexpectedEndOfRecord),
                 None => return Err(DeserializeError::UnexpectedEndOfRecord),
             };
             seed.deserialize(name.into_deserializer()).map(Some)
@@ -610,7 +622,7 @@ impl<'a, 'de: 'a> de::VariantAccess<'de> for &'a mut Deserializer<'de> {
 /// ```rust
 /// use serde_derive::Deserialize;
 /// use serde;
-/// use fixed_width::{Field, FixedWidth};
+/// use fixed_width::{Field, FieldSet, FixedWidth};
 ///
 /// #[derive(Debug, Deserialize)]
 /// pub struct Point {
@@ -620,9 +632,13 @@ impl<'a, 'de: 'a> de::VariantAccess<'de> for &'a mut Deserializer<'de> {
 ///
 /// impl FixedWidth for Point {
 ///     fn fields() -> Vec<Field> {
+///         unimplemented!()
+///     }
+///
+///     fn fieldset() -> Vec<FieldSet> {
 ///         vec![
-///             Field::default().range(0..4),
-///             Field::default().range(4..8),
+///             FieldSet::new_field(0..4),
+///             FieldSet::new_field(4..8),
 ///         ]
 ///     }
 /// }
@@ -637,9 +653,13 @@ impl<'a, 'de: 'a> de::VariantAccess<'de> for &'a mut Deserializer<'de> {
 ///
 /// impl FixedWidth for Line {
 ///     fn fields() -> Vec<Field> {
+///         unimplemented!()
+///     }
+///
+///     fn fieldset() -> Vec<FieldSet> {
 ///         vec![
-///             Field::default().range(0..8),
-///             Field::default().range(8..16),
+///             FieldSet::new_field(0..8),
+///             FieldSet::new_field(8..16),
 ///         ]
 ///     }
 /// }
@@ -672,7 +692,7 @@ where
         where
             E: serde::de::Error,
         {
-            from_bytes_with_fields(v, Self::Value::fields())
+            from_bytes_with_fields(v, Self::Value::fieldset())
                 .map_err(|e| serde::de::Error::custom(e.to_string()))
         }
     }
@@ -683,7 +703,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{Field, FixedWidth};
+    use crate::{Field, FieldSet, FixedWidth};
     use serde::Deserialize;
     use serde_bytes::ByteBuf;
     use serde_derive::Deserialize;
@@ -691,7 +711,7 @@ mod test {
 
     #[test]
     fn bool_de() {
-        let fields = vec![Field::default().range(0..1)];
+        let fields = vec![FieldSet::new_field(0..1)];
         let t: bool = from_bytes_with_fields(b"1", fields.clone()).unwrap();
         let f: bool = from_bytes_with_fields(b"0", fields.clone()).unwrap();
 
@@ -701,7 +721,7 @@ mod test {
 
     #[test]
     fn int_de() {
-        let fields = vec![Field::default().range(0..4)];
+        let fields = vec![FieldSet::new_field(0..4)];
 
         let uint8: u8 = from_bytes_with_fields(b"0123", fields.clone()).unwrap();
         let iint8: i8 = from_bytes_with_fields(b"-123", fields.clone()).unwrap();
@@ -726,7 +746,7 @@ mod test {
 
     #[test]
     fn float_de() {
-        let fields = vec![Field::default().range(0..6)];
+        let fields = vec![FieldSet::new_field(0..6)];
 
         let pos_f32: f32 = from_bytes_with_fields(b"0123.1", fields.clone()).unwrap();
         let neg_f32: f32 = from_bytes_with_fields(b"-123.1", fields.clone()).unwrap();
@@ -741,28 +761,28 @@ mod test {
 
     #[test]
     fn str_de() {
-        let fields = vec![Field::default().range(0..6)];
+        let fields = vec![FieldSet::new_field(0..6)];
         let s: &str = from_bytes_with_fields(b"foobar", fields).unwrap();
         assert_eq!(s, "foobar");
     }
 
     #[test]
     fn string_de() {
-        let fields = vec![Field::default().range(0..6)];
+        let fields = vec![FieldSet::new_field(0..6)];
         let s: String = from_bytes_with_fields(b"foobar", fields).unwrap();
         assert_eq!(s, "foobar");
     }
 
     #[test]
     fn char_de() {
-        let fields = vec![Field::default().range(0..1)];
+        let fields = vec![FieldSet::new_field(0..1)];
         let s: char = from_bytes_with_fields(b"f", fields).unwrap();
         assert_eq!(s, 'f');
     }
 
     #[test]
     fn bytes_de() {
-        let fields = vec![Field::default().range(0..6)];
+        let fields = vec![FieldSet::new_field(0..6)];
         let s: Vec<u8> = from_bytes_with_fields::<ByteBuf>(b"foobar", fields)
             .unwrap()
             .into_vec();
@@ -771,25 +791,25 @@ mod test {
 
     #[test]
     fn byte_buf_de() {
-        let fields = vec![Field::default().range(0..6)];
+        let fields = vec![FieldSet::new_field(0..6)];
         let s: &[u8] = from_bytes_with_fields(b"foobar", fields).unwrap();
         assert_eq!(s, b"foobar");
     }
 
     #[test]
     fn option_de() {
-        let fields = vec![Field::default().range(0..1)];
+        let fields = vec![FieldSet::new_field(0..1)];
         let c: Option<char> = from_bytes_with_fields(b"c", fields).unwrap();
         assert_eq!(c, Some('c'));
 
-        let fields = vec![Field::default().range(0..1)];
+        let fields = vec![FieldSet::new_field(0..1)];
         let c: Option<char> = from_bytes_with_fields(b" ", fields).unwrap();
         assert_eq!(c, None);
     }
 
     #[test]
     fn unit_de() {
-        let fields = vec![Field::default().range(0..1)];
+        let fields = vec![FieldSet::new_field(0..1)];
         let u: () = from_bytes_with_fields(b"c", fields).unwrap();
         assert_eq!(u, ());
     }
@@ -799,7 +819,7 @@ mod test {
 
     #[test]
     fn unit_struct_de() {
-        let fields = vec![Field::default().range(0..3)];
+        let fields = vec![FieldSet::new_field(0..3)];
         let unit: Unit = from_bytes_with_fields(b"123", fields).unwrap();
         assert_eq!(unit, Unit);
     }
@@ -809,14 +829,14 @@ mod test {
 
     #[test]
     fn newtype_struct_de() {
-        let fields = vec![Field::default().range(0..3)];
+        let fields = vec![FieldSet::new_field(0..3)];
         let nt: Newtype = from_bytes_with_fields(b"123", fields).unwrap();
         assert_eq!(nt, Newtype(123));
     }
 
     #[test]
     fn seq_de() {
-        let fields = vec![Field::default().range(0..3), Field::default().range(3..6)];
+        let fields = vec![FieldSet::new_field(0..3), FieldSet::new_field(3..6)];
         let v: Vec<usize> = from_bytes_with_fields(b"111222", fields).unwrap();
         assert_eq!(v, vec![111, 222]);
     }
@@ -831,11 +851,15 @@ mod test {
 
     impl FixedWidth for Test1 {
         fn fields() -> Vec<Field> {
+            unimplemented!()
+        }
+
+        fn fieldset() -> Vec<FieldSet> {
             vec![
-                Field::default().range(0..3),
-                Field::default().range(3..6),
-                Field::default().range(6..10),
-                Field::default().range(10..13),
+                FieldSet::new_field(0..3),
+                FieldSet::new_field(3..6),
+                FieldSet::new_field(6..10),
+                FieldSet::new_field(10..13),
             ]
         }
     }
@@ -853,7 +877,7 @@ mod test {
 
     #[test]
     fn tuple_de() {
-        let fields = vec![Field::default().range(0..3), Field::default().range(3..6)];
+        let fields = vec![FieldSet::new_field(0..3), FieldSet::new_field(3..6)];
         let t: (usize, usize) = from_bytes_with_fields(b"111222", fields).unwrap();
         assert_eq!(t, (111, 222));
     }
@@ -863,7 +887,7 @@ mod test {
 
     #[test]
     fn tuple_struct_de() {
-        let fields = vec![Field::default().range(0..3), Field::default().range(3..6)];
+        let fields = vec![FieldSet::new_field(0..3), FieldSet::new_field(3..6)];
         let t: Tuple = from_bytes_with_fields(b"111222", fields).unwrap();
         assert_eq!(t, Tuple(111, 222));
     }
@@ -874,10 +898,10 @@ mod test {
         let mut de = Deserializer::new(
             input,
             vec![
-                Field::default().range(0..3).name(Some("a")),
-                Field::default().range(3..6).name(Some("b")),
-                Field::default().range(6..10),
-                Field::default().range(10..13).name(Some("d")),
+                FieldSet::new_field(0..3).name("a"),
+                FieldSet::new_field(3..6).name("b"),
+                FieldSet::new_field(6..10),
+                FieldSet::new_field(10..13).name("d"),
             ],
         );
 
@@ -896,7 +920,7 @@ mod test {
 
     #[test]
     fn enum_de() {
-        let fields = vec![Field::default().range(0..3)];
+        let fields = vec![FieldSet::new_field(0..3)];
         let e: Enum = from_bytes_with_fields(b"Foo", fields).unwrap();
         assert_eq!(e, Enum::Foo);
     }
@@ -935,7 +959,7 @@ mod test {
 
     #[test]
     fn test_does_not_panic_for_empty_char() {
-        let fields = vec![Field::default().range(0..1)];
+        let fields = vec![FieldSet::new_field(0..1)];
         let tc: TestChar = from_bytes_with_fields(b"  ", fields).unwrap();
 
         assert_eq!(tc.a, ' ');
@@ -943,7 +967,7 @@ mod test {
 
     #[test]
     fn test_does_not_panic_for_empty_bool() {
-        let fields = vec![Field::default().range(0..1)];
+        let fields = vec![FieldSet::new_field(0..1)];
         let tc: TestBool = from_bytes_with_fields(b"  ", fields).unwrap();
 
         assert_eq!(tc.a, false);
@@ -964,7 +988,7 @@ mod test {
 
     #[test]
     fn test_lowercase_serde_option_for_enum() {
-        let fields = vec![Field::default().range(0..3)];
+        let fields = vec![FieldSet::new_field(0..3)];
         let de: Foo = from_str_with_fields("bar", fields).unwrap();
 
         assert_eq!(
@@ -973,5 +997,117 @@ mod test {
                 value: FooEnum::Bar
             }
         )
+    }
+
+    #[derive(Deserialize)]
+    struct Test2 {
+        a: Test1,
+        b: Test1,
+    }
+
+    impl FixedWidth for Test2 {
+        fn fields() -> Vec<Field> {
+            unimplemented!()
+        }
+
+        fn fieldset() -> Vec<FieldSet> {
+            vec![
+                FieldSet::FieldSeq(vec![
+                    FieldSet::new_field(0..3),
+                    FieldSet::new_field(3..6),
+                    FieldSet::new_field(6..10),
+                    FieldSet::new_field(10..13),
+                ]),
+                FieldSet::FieldSeq(vec![
+                    FieldSet::new_field(13..16),
+                    FieldSet::new_field(16..19),
+                    FieldSet::new_field(19..23),
+                    FieldSet::new_field(23..26),
+                ]),
+            ]
+        }
+    }
+
+    #[test]
+    fn test_nested_sturct() {
+        let input = b"123abc9876 12321cba6789 21";
+        let test: Test2 = from_bytes(input).unwrap();
+
+        assert_eq!(test.a.a, 123);
+        assert_eq!(test.a.b, "abc");
+        assert_eq!(test.a.c, 9876.0);
+        assert_eq!(test.a.d, Some(12));
+
+        assert_eq!(test.b.a, 321);
+        assert_eq!(test.b.b, "cba");
+        assert_eq!(test.b.c, 6789.0);
+        assert_eq!(test.b.d, Some(21));
+    }
+
+    #[test]
+    fn test_nested_seq() {
+        let s = " 222 111         253 254 121 232";
+        let fields = vec![
+            FieldSet::FieldSeq(vec![FieldSet::new_field(0..4), FieldSet::new_field(4..8)]),
+            FieldSet::FieldSeq(vec![
+                FieldSet::new_field(8..12),
+                FieldSet::new_field(12..16),
+            ]),
+            FieldSet::FieldSeq(vec![
+                FieldSet::new_field(16..20),
+                FieldSet::new_field(20..24),
+            ]),
+            FieldSet::FieldSeq(vec![
+                FieldSet::new_field(24..28),
+                FieldSet::new_field(28..32),
+            ]),
+        ];
+
+        let arr: [Option<(u8, u8)>; 4] = from_str_with_fields(s, fields.clone()).unwrap();
+
+        assert_eq!(arr[0], Some((222, 111)));
+        assert_eq!(arr[1], None);
+        assert_eq!(arr[2], Some((253, 254)));
+        assert_eq!(arr[3], Some((121, 232)));
+    }
+
+    #[derive(Deserialize)]
+    struct Test3 {
+        a: Vec<i32>,
+        b: Vec<i32>,
+    }
+
+    impl FixedWidth for Test3 {
+        fn fields() -> Vec<Field> {
+            unimplemented!()
+        }
+
+        fn fieldset() -> Vec<FieldSet> {
+            vec![
+                FieldSet::FieldSeq(vec![
+                    FieldSet::new_field(0..2),
+                    FieldSet::new_field(2..4),
+                    FieldSet::new_field(4..6),
+                ]),
+                FieldSet::FieldSeq(vec![
+                    FieldSet::new_field(6..8),
+                    FieldSet::new_field(8..10),
+                    FieldSet::new_field(10..12),
+                ]),
+            ]
+        }
+    }
+
+    #[test]
+    fn test_nested_vec() {
+        let s = " 1 2 3 4 5 6";
+        let test: Test3 = from_str(s).unwrap();
+
+        assert_eq!(test.a[0], 1);
+        assert_eq!(test.a[1], 2);
+        assert_eq!(test.a[2], 3);
+        assert_eq!(test.b[0], 4);
+        assert_eq!(test.b[1], 5);
+        assert_eq!(test.b[2], 6);
     }
 }

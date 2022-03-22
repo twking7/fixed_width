@@ -62,7 +62,7 @@ Reading a `String` into a `Vec` of user defined structs:
 ```rust
 use serde_derive::Deserialize;
 use serde;
-use fixed_width::{Reader, FixedWidth, Field};
+use fixed_width::{Reader, FixedWidth, Field, FieldSet};
 use std::result;
 
 #[derive(Deserialize)]
@@ -73,35 +73,38 @@ struct Person {
 
 impl FixedWidth for Person {
     fn fields() -> Vec<Field> {
+        unimplemented!()
+    }
+
+    fn fieldset() -> Vec<FieldSet> {
         vec![
-            Field::default().range(0..6),
-            Field::default().range(6..9),
+            FieldSet::new_field(0..6),
+            FieldSet::new_field(6..9),
         ]
     }
 }
 
-fn main() {
-    let mut reader = Reader::from_string("foobar 25barfoo 35").width(9);
-    let records: Vec<Person> = reader.byte_reader()
-                                     .filter_map(result::Result::ok)
-                                     .map(|bytes| fixed_width::from_bytes(&bytes).unwrap())
-                                     .collect();
-}
+let mut reader = Reader::from_string("foobar 25barfoo 35").width(9);
+let records: Vec<Person> = reader.byte_reader()
+                                 .filter_map(result::Result::ok)
+                                 .map(|bytes| fixed_width::from_bytes(&bytes).unwrap())
+                                 .collect();
 ```
 !*/
 #![crate_name = "fixed_width"]
 #![deny(missing_docs)]
 
-use std::{convert, ops::Range, result};
 pub use crate::de::{
     deserialize, from_bytes, from_bytes_with_fields, from_str, from_str_with_fields,
     DeserializeError, Deserializer,
 };
 pub use crate::{
-    error::Error, reader::{ByteReader, Reader, StringReader},
+    error::Error,
+    reader::{ByteReader, Reader, StringReader},
     ser::{to_bytes, to_string, to_writer, to_writer_with_fields, SerializeError, Serializer},
     writer::{AsByteSlice, Writer},
 };
+use std::{convert, ops::Range, result};
 
 mod de;
 mod error;
@@ -114,8 +117,11 @@ pub type Result<T> = result::Result<T, error::Error>;
 
 /// Defines fixed width field definitions for a type.
 pub trait FixedWidth {
-    /// Returns an order independent `Vec` of field definitions.
+    /// Returns field definitaions
     fn fields() -> Vec<Field>;
+
+    /// Returns field definitaions
+    fn fieldset() -> Vec<FieldSet>;
 }
 
 /// Justification of a fixed width field.
@@ -239,6 +245,101 @@ impl Field {
     /// ```
     pub fn justify<T: Into<Justify>>(mut self, val: T) -> Self {
         self.justify = val.into();
+        self
+    }
+}
+
+/// Field structure definition.
+#[derive(Debug, Clone)]
+pub enum FieldSet {
+    /// For single Field
+    Field(Field),
+    /// For Sequence of Fields
+    FieldSeq(Vec<FieldSet>),
+}
+
+impl FieldSet {
+    ///  Construct a new `FieldSet::Field`
+    pub fn new_field(range: std::ops::Range<usize>) -> Self {
+        Self::Field(Field::default().range(range))
+    }
+
+    /// Sets the name of this field. Mainly used when deserializing into a HashMap to derive the keys.
+    ///
+    /// ### Example
+    ///
+    /// ```rust
+    /// use fixed_width::FieldSet;
+    ///
+    /// let field = FieldSet::new_field(0..0).name("thing");
+    /// let name = match field {
+    ///     FieldSet::Field(f) => f.name,
+    ///     _ => unreachable!(),
+    /// };
+    ///
+    /// assert_eq!(name, Some("thing".to_string()));
+    /// ```
+    pub fn name<T: Into<String>>(mut self, val: T) -> Self {
+        match self {
+            Self::Field(field) => {
+                let field = field.name(Some(val));
+                self = Self::Field(field)
+            }
+            _ => unimplemented!("Setting name on FieldSet::FieldSeq is not feasible."),
+        }
+        self
+    }
+
+    /// Sets the character to use as padding the value of this field to its byte width.
+    ///
+    /// ### Example
+    ///
+    /// ```rust
+    /// use fixed_width::FieldSet;
+    ///
+    /// let field = FieldSet::new_field(0..0).pad_with('a');
+    /// let pad = match field {
+    ///     FieldSet::Field(f) => f.pad_with,
+    ///     _ => unreachable!(),
+    /// };
+    ///
+    /// assert_eq!(pad, 'a');
+    /// ```
+    pub fn pad_with(mut self, val: char) -> Self {
+        match self {
+            Self::Field(field) => {
+                let field = field.pad_with(val);
+                self = Self::Field(field)
+            }
+            _ => unimplemented!("Setting pad_with on FieldSet::FieldSeq is not feasible."),
+        }
+        self
+    }
+
+    /// Sets the justification to use for this field. Left will align to the left and Right to the
+    /// right.
+    ///
+    /// ### Example
+    ///
+    /// ```rust
+    /// use fixed_width::{FieldSet, Justify};
+    ///
+    /// let field = FieldSet::new_field(0..0).justify(Justify::Right);
+    /// let justify = match field {
+    ///     FieldSet::Field(f) => f.justify,
+    ///     _ => unimplemented!(),
+    /// };
+    ///
+    /// assert_eq!(justify, Justify::Right);
+    /// ```
+    pub fn justify<T: Into<Justify>>(mut self, val: T) -> Self {
+        match self {
+            Self::Field(field) => {
+                let field = field.justify(val);
+                self = Self::Field(field)
+            }
+            _ => unimplemented!("Setting justify on FieldSet::FieldSeq is not feasible."),
+        }
         self
     }
 }
