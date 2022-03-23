@@ -46,11 +46,11 @@ pub struct StringReader<'a, R: 'a> {
 ///         unimplemented!()
 ///     }
 ///
-///     fn fieldset() -> Vec<FieldSet> {
-///         vec![
+///     fn fieldset() -> FieldSet {
+///         FieldSet::Seq(vec![
 ///             FieldSet::new_field(0..6),
 ///             FieldSet::new_field(6..10),
-///         ]
+///         ])
 ///     }
 /// }
 ///
@@ -77,10 +77,10 @@ pub struct StringReader<'a, R: 'a> {
 ///
 ///  let data = "foobar1234foobaz6789";
 ///  let mut reader = Reader::from_string(data).width(10);
-///  let fields = vec![
+///  let fields = FieldSet::Seq(vec![
 ///      FieldSet::new_field(0..6).name("name"),
 ///      FieldSet::new_field(6..10).name("age"),
-///  ];
+///  ]);
 ///
 ///  for row in reader.byte_reader() {
 ///      let bytes = row.unwrap();
@@ -531,12 +531,12 @@ mod test {
             unimplemented!()
         }
 
-        fn fieldset() -> Vec<FieldSet> {
-            vec![
+        fn fieldset() -> FieldSet {
+            FieldSet::Seq(vec![
                 FieldSet::new_field(0..4),
                 FieldSet::new_field(4..8),
                 FieldSet::new_field(8..16),
-            ]
+            ])
         }
     }
 

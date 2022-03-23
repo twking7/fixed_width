@@ -76,11 +76,11 @@ impl FixedWidth for Person {
         unimplemented!()
     }
 
-    fn fieldset() -> Vec<FieldSet> {
-        vec![
+    fn fieldset() -> FieldSet {
+        FieldSet::Seq(vec![
             FieldSet::new_field(0..6),
             FieldSet::new_field(6..9),
-        ]
+        ])
     }
 }
 
@@ -108,6 +108,7 @@ use std::{convert, ops::Range, result};
 
 mod de;
 mod error;
+mod macros;
 mod reader;
 mod ser;
 mod writer;
@@ -121,7 +122,7 @@ pub trait FixedWidth {
     fn fields() -> Vec<Field>;
 
     /// Returns field definitaions
-    fn fieldset() -> Vec<FieldSet>;
+    fn fieldset() -> FieldSet;
 }
 
 /// Justification of a fixed width field.
@@ -167,6 +168,11 @@ impl Default for Field {
 }
 
 impl Field {
+    /// Create a new field.
+    pub fn new(range: std::ops::Range<usize>) -> Self {
+        Field::default().range(range)
+    }
+
     /// Sets the width of this field in bytes, as specified by the range (start - end).
     ///
     /// ### Example
@@ -174,7 +180,7 @@ impl Field {
     /// ```rust
     /// use fixed_width::Field;
     ///
-    /// let field = Field::default().range(0..5);
+    /// let field = Field::new(0..5);
     ///
     /// assert_eq!(field.width(), 5);
     /// ```
@@ -253,94 +259,95 @@ impl Field {
 #[derive(Debug, Clone)]
 pub enum FieldSet {
     /// For single Field
-    Field(Field),
+    Item(Field),
     /// For Sequence of Fields
-    FieldSeq(Vec<FieldSet>),
+    Seq(Vec<FieldSet>),
 }
 
 impl FieldSet {
-    ///  Construct a new `FieldSet::Field`
+    ///  Create a new `FieldSet::Item`
     pub fn new_field(range: std::ops::Range<usize>) -> Self {
-        Self::Field(Field::default().range(range))
+        Self::Item(Field::new(range))
     }
 
-    /// Sets the name of this field. Mainly used when deserializing into a HashMap to derive the keys.
-    ///
-    /// ### Example
-    ///
-    /// ```rust
-    /// use fixed_width::FieldSet;
-    ///
-    /// let field = FieldSet::new_field(0..0).name("thing");
-    /// let name = match field {
-    ///     FieldSet::Field(f) => f.name,
-    ///     _ => unreachable!(),
-    /// };
-    ///
-    /// assert_eq!(name, Some("thing".to_string()));
-    /// ```
-    pub fn name<T: Into<String>>(mut self, val: T) -> Self {
+    /// Wrapped method of [`Field::name`]
+    pub fn name<T: Into<String>>(self, val: T) -> Self {
         match self {
-            Self::Field(field) => {
+            Self::Item(field) => {
                 let field = field.name(Some(val));
-                self = Self::Field(field)
+                Self::Item(field)
             }
             _ => unimplemented!("Setting name on FieldSet::FieldSeq is not feasible."),
         }
-        self
     }
 
-    /// Sets the character to use as padding the value of this field to its byte width.
-    ///
-    /// ### Example
-    ///
-    /// ```rust
-    /// use fixed_width::FieldSet;
-    ///
-    /// let field = FieldSet::new_field(0..0).pad_with('a');
-    /// let pad = match field {
-    ///     FieldSet::Field(f) => f.pad_with,
-    ///     _ => unreachable!(),
-    /// };
-    ///
-    /// assert_eq!(pad, 'a');
-    /// ```
-    pub fn pad_with(mut self, val: char) -> Self {
+    /// Wrapped method of [`Field::pad_with`]
+    pub fn pad_with(self, val: char) -> Self {
         match self {
-            Self::Field(field) => {
+            Self::Item(field) => {
                 let field = field.pad_with(val);
-                self = Self::Field(field)
+                Self::Item(field)
             }
             _ => unimplemented!("Setting pad_with on FieldSet::FieldSeq is not feasible."),
         }
-        self
     }
 
-    /// Sets the justification to use for this field. Left will align to the left and Right to the
-    /// right.
+    /// Wrapped method of [`Field::justify`]
+    pub fn justify<T: Into<Justify>>(self, val: T) -> Self {
+        match self {
+            Self::Item(field) => {
+                let field = field.justify(val);
+                Self::Item(field)
+            }
+            _ => unimplemented!("Setting justify on FieldSet::FieldSeq is not feasible."),
+        }
+    }
+
+    /// Returns flatten fields.
     ///
     /// ### Example
     ///
     /// ```rust
-    /// use fixed_width::{FieldSet, Justify};
+    /// use fixed_width::{Field, FieldSet};
     ///
-    /// let field = FieldSet::new_field(0..0).justify(Justify::Right);
-    /// let justify = match field {
-    ///     FieldSet::Field(f) => f.justify,
-    ///     _ => unimplemented!(),
-    /// };
+    /// let fields = FieldSet::Seq(vec![
+    ///     FieldSet::Seq(vec![FieldSet::new_field(0..1), FieldSet::new_field(1..2)]),
+    ///     FieldSet::new_field(2..3)
+    /// ]);
+    /// let flatten_fields = vec![Field::new(0..1), Field::new(1..2), Field::new(2..3)];
     ///
-    /// assert_eq!(justify, Justify::Right);
+    /// assert_eq!(format!("{:?}", fields.flatten()), format!("{:?}", flatten_fields));
     /// ```
-    pub fn justify<T: Into<Justify>>(mut self, val: T) -> Self {
-        match self {
-            Self::Field(field) => {
-                let field = field.justify(val);
-                self = Self::Field(field)
+    pub fn flatten(self) -> Vec<Field> {
+        let mut flatten = vec![];
+        let mut stack = vec![vec![self]];
+
+        while !stack.is_empty() {
+            let last = stack.last_mut().unwrap();
+            if last.is_empty() {
+                stack.pop();
+            } else {
+                let field = last.drain(..1).next().unwrap();
+                match field {
+                    FieldSet::Item(field) => flatten.push(field),
+                    FieldSet::Seq(seq) => stack.push(seq.to_vec()),
+                }
             }
-            _ => unimplemented!("Setting justify on FieldSet::FieldSeq is not feasible."),
         }
-        self
+
+        flatten
+    }
+}
+
+impl IntoIterator for FieldSet {
+    type Item = FieldSet;
+    type IntoIter = std::vec::IntoIter<FieldSet>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        match self {
+            field @ FieldSet::Item(_) => vec![field].into_iter(),
+            FieldSet::Seq(seq) => seq.into_iter(),
+        }
     }
 }
 
@@ -393,8 +400,7 @@ mod test {
 
     #[test]
     fn field_building() {
-        let field = Field::default()
-            .range(0..10)
+        let field = Field::new(0..10)
             .name(Some("foo"))
             .pad_with('a')
             .justify(Justify::Right);
@@ -407,7 +413,7 @@ mod test {
 
     #[test]
     fn field_width() {
-        let field = Field::default().range(5..23);
+        let field = Field::new(5..23);
 
         assert_eq!(field.width(), 18);
     }

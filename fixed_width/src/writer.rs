@@ -1,6 +1,9 @@
-use std::{io::{self, Write}, borrow::Cow};
-use serde::ser::Serialize;
 use crate::{ser, FixedWidth, LineBreak, Result};
+use serde::ser::Serialize;
+use std::{
+    borrow::Cow,
+    io::{self, Write},
+};
 
 const BUFFER_SIZE: usize = 65_536;
 
@@ -35,7 +38,7 @@ impl AsByteSlice for [u8] {
 impl AsByteSlice for Vec<u8> {
     /// Borrow a `Vec<u8>` as `&[u8]`
     fn as_byte_slice(&self) -> &[u8] {
-        &self
+        self
     }
 }
 
@@ -212,8 +215,8 @@ impl Into<String> for Writer<Vec<u8>> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::{Field, FieldSet, FixedWidth};
     use serde_derive::Serialize;
-    use crate::{Field, FixedWidth};
 
     #[test]
     fn write_to_memory() {
@@ -262,7 +265,14 @@ mod test {
 
     impl FixedWidth for Test2 {
         fn fields() -> Vec<Field> {
-            vec![Field::default().range(0..3), Field::default().range(3..6)]
+            unimplemented!()
+        }
+
+        fn fieldset() -> FieldSet {
+            FieldSet::Seq(vec![
+                FieldSet::Item(Field::new(0..3)),
+                FieldSet::Item(Field::new(3..6)),
+            ])
         }
     }
 
