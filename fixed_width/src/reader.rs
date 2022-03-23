@@ -30,7 +30,7 @@ pub struct StringReader<'a, R: 'a> {
 /// ```rust
 /// use serde_derive::Deserialize;
 /// use serde;
-/// use fixed_width::{Field, FieldSet, FixedWidth, Reader};
+/// use fixed_width::{FieldSet, FixedWidth, Reader};
 /// use serde::Deserialize;
 /// use std::result;
 ///
@@ -42,11 +42,7 @@ pub struct StringReader<'a, R: 'a> {
 ///
 /// // can be derived using the `fixed_width_derive` crate.
 /// impl FixedWidth for Foo {
-///     fn fields() -> Vec<Field> {
-///         unimplemented!()
-///     }
-///
-///     fn fieldset() -> FieldSet {
+///     fn fields() -> FieldSet {
 ///         FieldSet::Seq(vec![
 ///             FieldSet::new_field(0..6),
 ///             FieldSet::new_field(6..10),
@@ -408,7 +404,7 @@ where
 #[allow(dead_code)]
 mod test {
     use super::*;
-    use crate::{Field, FieldSet, FixedWidth};
+    use crate::{FieldSet, FixedWidth};
     use serde_derive::Deserialize;
     use std::result;
 
@@ -527,11 +523,7 @@ mod test {
     }
 
     impl FixedWidth for Test {
-        fn fields() -> Vec<Field> {
-            unimplemented!()
-        }
-
-        fn fieldset() -> FieldSet {
+        fn fields() -> FieldSet {
             FieldSet::Seq(vec![
                 FieldSet::new_field(0..4),
                 FieldSet::new_field(4..8),

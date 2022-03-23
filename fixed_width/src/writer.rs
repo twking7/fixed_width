@@ -215,7 +215,7 @@ impl Into<String> for Writer<Vec<u8>> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{Field, FieldSet, FixedWidth};
+    use crate::{FieldSet, FixedWidth};
     use serde_derive::Serialize;
 
     #[test]
@@ -264,15 +264,8 @@ mod test {
     }
 
     impl FixedWidth for Test2 {
-        fn fields() -> Vec<Field> {
-            unimplemented!()
-        }
-
-        fn fieldset() -> FieldSet {
-            FieldSet::Seq(vec![
-                FieldSet::Item(Field::new(0..3)),
-                FieldSet::Item(Field::new(3..6)),
-            ])
+        fn fields() -> FieldSet {
+            FieldSet::Seq(vec![FieldSet::new_field(0..3), FieldSet::new_field(3..6)])
         }
     }
 

@@ -62,7 +62,7 @@ Reading a `String` into a `Vec` of user defined structs:
 ```rust
 use serde_derive::Deserialize;
 use serde;
-use fixed_width::{Reader, FixedWidth, Field, FieldSet};
+use fixed_width::{Reader, FixedWidth, FieldSet};
 use std::result;
 
 #[derive(Deserialize)]
@@ -72,11 +72,7 @@ struct Person {
 }
 
 impl FixedWidth for Person {
-    fn fields() -> Vec<Field> {
-        unimplemented!()
-    }
-
-    fn fieldset() -> FieldSet {
+    fn fields() -> FieldSet {
         FieldSet::Seq(vec![
             FieldSet::new_field(0..6),
             FieldSet::new_field(6..9),
@@ -119,10 +115,7 @@ pub type Result<T> = result::Result<T, error::Error>;
 /// Defines fixed width field definitions for a type.
 pub trait FixedWidth {
     /// Returns field definitaions
-    fn fields() -> Vec<Field>;
-
-    /// Returns field definitaions
-    fn fieldset() -> FieldSet;
+    fn fields() -> FieldSet;
 }
 
 /// Justification of a fixed width field.

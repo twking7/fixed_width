@@ -9,7 +9,7 @@ use std::{error::Error as StdError, fmt, io, iter, vec};
 /// ```rust
 /// use serde_derive::Serialize;
 /// use serde;
-/// use fixed_width::{Field, FieldSet, FixedWidth};
+/// use fixed_width::{FieldSet, FixedWidth};
 ///
 /// #[derive(Serialize)]
 /// struct Record {
@@ -18,11 +18,7 @@ use std::{error::Error as StdError, fmt, io, iter, vec};
 /// }
 ///
 /// impl FixedWidth for Record {
-///     fn fields() -> Vec<Field> {
-///         unimplemented!()
-///     }
-///
-///     fn fieldset() -> FieldSet {
+///     fn fields() -> FieldSet {
 ///         FieldSet::Seq(vec![
 ///             FieldSet::new_field(0..4),
 ///             FieldSet::new_field(4..8),
@@ -48,7 +44,7 @@ pub fn to_string<T: FixedWidth + Serialize>(record: &T) -> Result<String> {
 /// ```rust
 /// use serde_derive::Serialize;
 /// use serde;
-/// use fixed_width::{Field, FixedWidth, FieldSet};
+/// use fixed_width::{FixedWidth, FieldSet};
 ///
 /// #[derive(Serialize)]
 /// struct Record {
@@ -57,11 +53,7 @@ pub fn to_string<T: FixedWidth + Serialize>(record: &T) -> Result<String> {
 /// }
 ///
 /// impl FixedWidth for Record {
-///     fn fields() -> Vec<Field> {
-///         unimplemented!()
-///     }
-///
-///     fn fieldset() -> FieldSet {
+///     fn fields() -> FieldSet {
 ///         FieldSet::Seq(vec![
 ///             FieldSet::new_field(0..4),
 ///             FieldSet::new_field(4..8),
@@ -88,7 +80,7 @@ pub fn to_bytes<T: FixedWidth + Serialize>(record: &T) -> Result<Vec<u8>> {
 /// ```rust
 /// use serde_derive::Serialize;
 /// use serde;
-/// use fixed_width::{Field, FixedWidth, Writer, FieldSet};
+/// use fixed_width::{FixedWidth, Writer, FieldSet};
 ///
 /// #[derive(Serialize)]
 /// struct Person {
@@ -97,11 +89,7 @@ pub fn to_bytes<T: FixedWidth + Serialize>(record: &T) -> Result<Vec<u8>> {
 /// }
 ///
 /// impl FixedWidth for Person {
-///     fn fields() -> Vec<Field> {
-///         unimplemented!()
-///     }
-///
-///     fn fieldset() -> FieldSet {
+///     fn fields() -> FieldSet {
 ///         FieldSet::Seq(vec![
 ///             FieldSet::new_field(0..8),
 ///             FieldSet::new_field(8..10),
@@ -126,7 +114,7 @@ where
     T: FixedWidth + Serialize,
     W: 'w + io::Write,
 {
-    to_writer_with_fields(wrtr, val, T::fieldset())
+    to_writer_with_fields(wrtr, val, T::fields())
 }
 
 /// Serializes data to the given writer using the provided `Field`s.
@@ -701,11 +689,7 @@ mod test {
     }
 
     impl FixedWidth for Test1 {
-        fn fields() -> Vec<Field> {
-            unimplemented!()
-        }
-
-        fn fieldset() -> FieldSet {
+        fn fields() -> FieldSet {
             FieldSet::Seq(vec![
                 FieldSet::new_field(0..3),
                 FieldSet::new_field(3..6),
@@ -791,11 +775,7 @@ mod test {
     }
 
     impl FixedWidth for Test2 {
-        fn fields() -> Vec<Field> {
-            unimplemented!()
-        }
-
-        fn fieldset() -> FieldSet {
+        fn fields() -> FieldSet {
             FieldSet::Seq(vec![
                 FieldSet::Seq(vec![
                     FieldSet::new_field(0..3),

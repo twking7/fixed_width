@@ -12,7 +12,7 @@ use std::{convert, error::Error as StdError, fmt, iter, num, result::Result, str
 /// ```rust
 /// use serde_derive::Deserialize;
 /// use serde;
-/// use fixed_width::{Field, FieldSet, FixedWidth};
+/// use fixed_width::{FieldSet, FixedWidth};
 ///
 /// #[derive(Deserialize)]
 /// struct Record {
@@ -21,11 +21,7 @@ use std::{convert, error::Error as StdError, fmt, iter, num, result::Result, str
 /// }
 ///
 /// impl FixedWidth for Record {
-///     fn fields() -> Vec<Field> {
-///         unimplemented!()
-///     }
-///
-///     fn fieldset() -> FieldSet {
+///     fn fields() -> FieldSet {
 ///         FieldSet::Seq(vec![
 ///             FieldSet::new_field(0..4),
 ///             FieldSet::new_field(4..8),
@@ -43,7 +39,7 @@ pub fn from_str<'de, T>(s: &'de str) -> Result<T, error::Error>
 where
     T: FixedWidth + Deserialize<'de>,
 {
-    from_str_with_fields(s, T::fieldset())
+    from_str_with_fields(s, T::fields())
 }
 
 /// Deserializes a `&[u8]` into the given type that implements `FixedWidth` and `Deserialize`.
@@ -53,7 +49,7 @@ where
 /// ```rust
 /// use serde_derive::Deserialize;
 /// use serde;
-/// use fixed_width::{Field, FieldSet, FixedWidth};
+/// use fixed_width::{FieldSet, FixedWidth};
 ///
 /// #[derive(Deserialize)]
 /// struct Record {
@@ -62,11 +58,7 @@ where
 /// }
 ///
 /// impl FixedWidth for Record {
-///     fn fields() -> Vec<Field> {
-///         unimplemented!()
-///     }
-///
-///     fn fieldset() -> FieldSet {
+///     fn fields() -> FieldSet {
 ///         FieldSet::Seq(vec![
 ///             FieldSet::new_field(0..4),
 ///             FieldSet::new_field(4..8),
@@ -84,7 +76,7 @@ pub fn from_bytes<'de, T>(b: &'de [u8]) -> Result<T, error::Error>
 where
     T: FixedWidth + Deserialize<'de>,
 {
-    from_bytes_with_fields(b, T::fieldset())
+    from_bytes_with_fields(b, T::fields())
 }
 
 /// Deserializes `&str` data to the given writer using the provided `Field`s.
@@ -93,7 +85,7 @@ where
 ///
 /// ```rust
 /// use std::collections::HashMap;
-/// use fixed_width::{Field, FieldSet, from_str_with_fields};
+/// use fixed_width::{FieldSet, from_str_with_fields};
 ///
 /// let fields = FieldSet::Seq(vec![
 ///     FieldSet::new_field(0..4).name("numbers"),
@@ -118,7 +110,7 @@ where
 ///
 /// ```rust
 /// use std::collections::HashMap;
-/// use fixed_width::{Field, FieldSet, from_bytes_with_fields};
+/// use fixed_width::{FieldSet, from_bytes_with_fields};
 ///
 /// let fields = FieldSet::Seq(vec![
 ///     FieldSet::new_field(0..4).name("numbers"),
@@ -235,7 +227,7 @@ impl<'r, 'de> Deserializer<'r> {
     ///
     /// ```rust
     /// use serde;
-    /// use fixed_width::{Field, FieldSet, Deserializer};
+    /// use fixed_width::{FieldSet, Deserializer};
     /// use serde::Deserialize;
     /// use std::collections::HashMap;
     ///
@@ -266,7 +258,7 @@ impl<'r, 'de> Deserializer<'r> {
     /// ### Example
     ///
     /// ```rust
-    /// use fixed_width::{Field, FieldSet, Deserializer, Reader};
+    /// use fixed_width::{FieldSet, Deserializer, Reader};
     ///
     /// let fields = FieldSet::Seq(vec![FieldSet::new_field(0..3)]);
     /// let de = Deserializer::new(b"foobar", fields);
@@ -615,7 +607,7 @@ impl<'a, 'de: 'a> de::VariantAccess<'de> for &'a mut Deserializer<'de> {
 /// ```rust
 /// use serde_derive::Deserialize;
 /// use serde;
-/// use fixed_width::{Field, FieldSet, FixedWidth};
+/// use fixed_width::{FieldSet, FixedWidth};
 ///
 /// #[derive(Debug, Deserialize)]
 /// pub struct Point {
@@ -624,11 +616,7 @@ impl<'a, 'de: 'a> de::VariantAccess<'de> for &'a mut Deserializer<'de> {
 /// }
 ///
 /// impl FixedWidth for Point {
-///     fn fields() -> Vec<Field> {
-///         unimplemented!()
-///     }
-///
-///     fn fieldset() -> FieldSet {
+///     fn fields() -> FieldSet {
 ///         FieldSet::Seq(vec![
 ///             FieldSet::new_field(0..4),
 ///             FieldSet::new_field(4..8),
@@ -645,11 +633,7 @@ impl<'a, 'de: 'a> de::VariantAccess<'de> for &'a mut Deserializer<'de> {
 /// }
 ///
 /// impl FixedWidth for Line {
-///     fn fields() -> Vec<Field> {
-///         unimplemented!()
-///     }
-///
-///     fn fieldset() -> FieldSet {
+///     fn fields() -> FieldSet {
 ///         FieldSet::Seq(vec![
 ///             FieldSet::new_field(0..8),
 ///             FieldSet::new_field(8..16),
@@ -685,7 +669,7 @@ where
         where
             E: serde::de::Error,
         {
-            from_bytes_with_fields(v, Self::Value::fieldset())
+            from_bytes_with_fields(v, Self::Value::fields())
                 .map_err(|e| serde::de::Error::custom(e.to_string()))
         }
     }
@@ -696,7 +680,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{Field, FieldSet, FixedWidth};
+    use crate::{FieldSet, FixedWidth};
     use serde::Deserialize;
     use serde_bytes::ByteBuf;
     use serde_derive::Deserialize;
@@ -843,11 +827,7 @@ mod test {
     }
 
     impl FixedWidth for Test1 {
-        fn fields() -> Vec<Field> {
-            unimplemented!()
-        }
-
-        fn fieldset() -> FieldSet {
+        fn fields() -> FieldSet {
             FieldSet::Seq(vec![
                 FieldSet::new_field(0..3),
                 FieldSet::new_field(3..6),
@@ -999,11 +979,7 @@ mod test {
     }
 
     impl FixedWidth for Test2 {
-        fn fields() -> Vec<Field> {
-            unimplemented!()
-        }
-
-        fn fieldset() -> FieldSet {
+        fn fields() -> FieldSet {
             FieldSet::Seq(vec![
                 FieldSet::Seq(vec![
                     FieldSet::new_field(0..3),
