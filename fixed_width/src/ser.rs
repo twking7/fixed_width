@@ -1,4 +1,4 @@
-use crate::{error::Error, writer::Writer, Field, FieldSet, FixedWidth, Justify, Result};
+use crate::{error::Error, writer::Writer, FieldConfig, FieldSet, FixedWidth, Justify, Result};
 use serde::ser::{self, Error as SerError, Serialize};
 use std::{error::Error as StdError, fmt, io, iter, vec};
 
@@ -181,7 +181,7 @@ impl SerError for Error {
 /// A serializer for fixed width data. Writes to the given Writer using the provided field
 /// definitions to determine how to serialize data into records.
 pub struct Serializer<'w, W: 'w + io::Write> {
-    fields: iter::Peekable<vec::IntoIter<Field>>,
+    fields: iter::Peekable<vec::IntoIter<FieldConfig>>,
     wrtr: &'w mut W,
 }
 
@@ -218,7 +218,7 @@ impl<'w, W: 'w + io::Write> Serializer<'w, W> {
         }
     }
 
-    fn next_field(&mut self) -> Result<Field> {
+    fn next_field(&mut self) -> Result<FieldConfig> {
         match self.fields.next() {
             Some(f) => Ok(f),
             None => Err(Error::from(SerializeError::UnexpectedEndOfFields)),
@@ -470,7 +470,7 @@ impl<'a, 'w, W: io::Write> ser::SerializeStructVariant for &'a mut Serializer<'w
 }
 
 #[inline]
-fn pad(bytes: &[u8], field: &Field) -> Vec<u8> {
+fn pad(bytes: &[u8], field: &FieldConfig) -> Vec<u8> {
     let width = field.width();
     let pad = field.pad_with as u8;
     let mut v = bytes.to_vec();
@@ -492,7 +492,7 @@ fn pad(bytes: &[u8], field: &Field) -> Vec<u8> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{Field, FieldSet, FixedWidth, Writer};
+    use crate::{FieldSet, FixedWidth, Writer};
     use serde_bytes::ByteBuf;
     use serde_derive::Serialize;
     use std::collections::HashMap;
@@ -718,12 +718,15 @@ mod test {
     #[test]
     fn pad_left_justified() {
         let inputs = vec!["123456789".as_bytes(), "12345".as_bytes(), "123".as_bytes()];
-        let field = Field::new(0..5).justify(Justify::Left).pad_with('T');
+        let field = &FieldSet::new_field(0..5)
+            .justify(Justify::Left)
+            .pad_with('T')
+            .flatten()[0];
 
         let expected = vec!["12345".as_bytes(), "12345".as_bytes(), "123TT".as_bytes()];
 
         for (i, input) in inputs.iter().enumerate() {
-            let padded = pad(input, &field);
+            let padded = pad(input, field);
             assert_eq!(padded, expected[i].to_vec());
         }
     }
@@ -731,12 +734,15 @@ mod test {
     #[test]
     fn pad_right_justified() {
         let inputs = vec!["123456789".as_bytes(), "12345".as_bytes(), "123".as_bytes()];
-        let field = Field::new(0..5).justify(Justify::Right).pad_with('T');
+        let field = &FieldSet::new_field(0..5)
+            .justify(Justify::Right)
+            .pad_with('T')
+            .flatten()[0];
 
         let expected = vec!["12345".as_bytes(), "12345".as_bytes(), "TT123".as_bytes()];
 
         for (i, input) in inputs.iter().enumerate() {
-            let padded = pad(input, &field);
+            let padded = pad(input, field);
             println!("{:?}", padded);
             assert_eq!(padded, expected[i].to_vec());
         }

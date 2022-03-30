@@ -279,7 +279,7 @@ impl<'r, 'de> Deserializer<'r> {
 
     fn peek_bytes(&mut self) -> Result<&'r [u8], DeserializeError> {
         let field = match self.fields.peek() {
-            Some(FieldSet::Item(field)) => field,
+            Some(FieldSet::Item(conf)) => conf,
             Some(_) => return Err(DeserializeError::UnexpectedEndOfRecord),
             None => return Err(DeserializeError::UnexpectedEndOfRecord),
         };
@@ -292,7 +292,7 @@ impl<'r, 'de> Deserializer<'r> {
 
     fn next_bytes(&mut self) -> Result<&'r [u8], DeserializeError> {
         let field = match self.fields.next() {
-            Some(FieldSet::Item(field)) => field,
+            Some(FieldSet::Item(conf)) => conf,
             Some(_) => return Err(DeserializeError::UnexpectedEndOfRecord),
             None => return Err(DeserializeError::UnexpectedEndOfRecord),
         };
