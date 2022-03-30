@@ -5,7 +5,7 @@
 /// ```rust
 /// use fixed_width::{FieldSet, field, field_seq};
 ///
-/// // Suppose we have fields definition as following:
+/// // Suppose field defined as:
 /// let fields = FieldSet::Seq(
 ///     vec![
 ///         FieldSet::new_field(0..4).name("foo"),
@@ -18,7 +18,7 @@
 ///     ]
 /// );
 ///
-/// // Which is identically with following:
+/// // Which is identical to:
 /// let fields_with_macro = field_seq![
 ///     field!(0..4).name("foo"),
 ///     field_seq![
@@ -32,7 +32,7 @@
 #[macro_export]
 macro_rules! field_seq {
     ($($field:expr),+ $(,)?) => {
-        FieldSet::Seq(vec![$($field),+])
+        fixed_width::FieldSet::Seq(vec![$($field),+])
     };
 }
 
@@ -40,6 +40,6 @@ macro_rules! field_seq {
 #[macro_export]
 macro_rules! field {
     ($range:expr) => {
-        FieldSet::new_field($range)
+        fixed_width::FieldSet::new_field($range)
     };
 }
