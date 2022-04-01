@@ -1,5 +1,6 @@
 /*!
-The `fixed_width` crate is designed to facilitate easy reading and writing of fixed width files.
+The `fixed_width` crate is designed to facilitate easy reading and writing of fixed width files with
+[serde](https://serde.rs/) support.
 It also provides a few useful abstractions to ease serializing and deserializing data into and out
 of fixed width files.
 
@@ -12,11 +13,11 @@ to write it.
 You can read or write data as `Vec<String>` or as `Vec<Vec<u8>>`. If you use serde, then you
 can also (de)serialize into and out of structs, HashMaps, etc. Since fixed width files are
 not self describing, you will need to define the set of
-[`Field`](struct.Field.html)
+[`FieldSet`](enum.FieldSet.html)
 definitions for your data up front so the (de)serialization code can work.
 
 Several errors may occur while using the library. These are defined in the
-[`Error`](struct.Error.html)
+[`Error`](enum.Error.html)
 type.
 
 # Installing
@@ -24,7 +25,7 @@ type.
 Start by adding the dependency to your project in `Cargo.toml`:
 
 ```toml
-fixed_width = "0.1"
+fixed_width = "0.4"
 ```
 
 Then in the root of your project:
@@ -38,8 +39,8 @@ field definitions for your types. It is optional, but if you wish to use it you 
 project like so in your `Cargo.toml`:
 
 ```toml
-fixed_width = "0.1"
-fixed_width_derive = "0.1"
+fixed_width = "0.4"
+fixed_width_derive = "0.4"
 ```
 
 # Usage
@@ -52,9 +53,10 @@ use std::result;
 
 let mut reader = Reader::from_string("record1record2").width(7);
 
-let records: Vec<String> = reader.string_reader()
-                                 .filter_map(result::Result::ok)
-                                 .collect();
+let records: Vec<String> = reader
+    .string_reader()
+    .filter_map(result::Result::ok)
+    .collect();
 ```
 
 Reading a `String` into a `Vec` of user defined structs:
@@ -81,10 +83,11 @@ impl FixedWidth for Person {
 }
 
 let mut reader = Reader::from_string("foobar 25barfoo 35").width(9);
-let records: Vec<Person> = reader.byte_reader()
-                                 .filter_map(result::Result::ok)
-                                 .map(|bytes| fixed_width::from_bytes(&bytes).unwrap())
-                                 .collect();
+let records: Vec<Person> = reader
+    .byte_reader()
+    .filter_map(result::Result::ok)
+    .map(|bytes| fixed_width::from_bytes(&bytes).unwrap())
+    .collect();
 ```
 !*/
 #![crate_name = "fixed_width"]

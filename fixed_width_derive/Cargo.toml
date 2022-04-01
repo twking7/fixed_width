@@ -6,6 +6,7 @@ repository = "https://github.com/twking7/fixed_width/fixed_width_derive"
 description = "Derive trait for use with the fixed_width crate."
 license = "MIT"
 edition = "2018"
+readme = "../README.md"
 
 [lib]
 proc-macro = true
@@ -14,8 +15,8 @@ proc-macro = true
 proc-macro2 = "1.0"
 syn = { version = "1.0", features = ["extra-traits", "parsing"] }
 quote = "1.0"
-fixed_width = { version = "0.4.2" }
 
 [dev-dependencies]
 serde = "1.0"
 serde_derive = "1.0"
+fixed_width = { path = "../fixed_width" }

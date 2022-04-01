@@ -1,5 +1,5 @@
 /*!
-This create provides a derive macro for the `fixed_width` crate's `Field` trait by providing
+This create provides a derive macro for the `fixed_width` crate's `FixedWidth` trait by providing
 a set of struct field attributes that can be used to more easily derive the trait.
 
 The derive only works on structs. Additionally, this crate uses features that require Rust version 1.30.0+ to run.
@@ -9,8 +9,8 @@ The derive only works on structs. Additionally, this crate uses features that re
 Start by adding the dependency to your project in `Cargo.toml`:
 
 ```toml
-fixed_width = "0.3"
-fixed_width_derive = "0.3"
+fixed_width = "0.4"
+fixed_width_derive = "0.4"
 ```
 
 # Usage
