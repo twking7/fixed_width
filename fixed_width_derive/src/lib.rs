@@ -1,5 +1,5 @@
 /*!
-This create provides a derive macro for the `fixed_width` crate's `Field` trait by providing
+This create provides a derive macro for the `fixed_width` crate's `FixedWidth` trait by providing
 a set of struct field attributes that can be used to more easily derive the trait.
 
 The derive only works on structs. Additionally, this crate uses features that require Rust version 1.30.0+ to run.
@@ -9,8 +9,8 @@ The derive only works on structs. Additionally, this crate uses features that re
 Start by adding the dependency to your project in `Cargo.toml`:
 
 ```toml
-fixed_width = "0.3"
-fixed_width_derive = "0.3"
+fixed_width = "0.4"
+fixed_width_derive = "0.4"
 ```
 
 # Usage
@@ -31,14 +31,13 @@ struct Person {
     #[serde(skip)]
     pub gender: String,
 }
-# fn main() {}
 ```
 
 The above sample is equivalent to implementing the following with the `fixed_width`
 crate alone:
 
 ```rust
-use fixed_width::{FixedWidth, Field, Justify};
+use fixed_width::{FixedWidth, FieldSet, Justify};
 
 struct Person {
     pub name: String,
@@ -47,15 +46,14 @@ struct Person {
 }
 
 impl FixedWidth for Person {
-    fn fields() -> Vec<Field> {
-        vec![
-            Field::default().range(0..6),
-            Field::default().range(6..9).pad_with('0'),
-            Field::default().range(9..11).justify(Justify::Right).name(Some("height_cm")),
-        ]
+    fn fields() -> FieldSet {
+        FieldSet::Seq(vec![
+            FieldSet::new_field(0..6),
+            FieldSet::new_field(6..9).pad_with('0'),
+            FieldSet::new_field(9..11).justify(Justify::Right).name("height_cm"),
+        ])
     }
 }
-# fn main() {}
 ```
 
 The full set of options you can supply for the attribute annotations are:
@@ -86,10 +84,10 @@ extern crate proc_macro2;
 #[macro_use]
 extern crate quote;
 
-use syn::DeriveInput;
+use crate::field_def::{Context, FieldDef};
 use proc_macro::TokenStream;
 use std::result;
-use crate::field_def::{Context, FieldDef};
+use syn::DeriveInput;
 
 mod field_def;
 
@@ -122,10 +120,8 @@ fn impl_fixed_width(ast: &DeriveInput) -> TokenStream {
 
     let quote = quote! {
         impl #impl_generics fixed_width::FixedWidth for #ident #ty_generics #where_clause {
-            fn fields() -> Vec<fixed_width::Field> {
-                vec![
-                    #(#tokens),*
-                ]
+            fn fields() -> fixed_width::FieldSet {
+                fixed_width::field_seq![#(#tokens),*]
             }
         }
     };
@@ -199,9 +195,8 @@ fn build_fixed_width_field(field_def: FieldDef) -> proc_macro2::TokenStream {
     let justify = field_def.justify;
 
     quote! {
-        fixed_width::Field::default()
-            .name(Some(#name))
-            .range(#start..#end)
+        fixed_width::FieldSet::new_field(#start..#end)
+            .name(#name)
             .pad_with(#pad_with)
             .justify(#justify.to_string())
     }

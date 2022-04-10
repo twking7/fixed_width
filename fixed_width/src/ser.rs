@@ -1,4 +1,4 @@
-use crate::{error::Error, writer::Writer, Field, FixedWidth, Justify, Result};
+use crate::{error::Error, writer::Writer, FieldConfig, FieldSet, FixedWidth, Justify, Result};
 use serde::ser::{self, Error as SerError, Serialize};
 use std::{error::Error as StdError, fmt, io, iter, vec};
 
@@ -9,7 +9,7 @@ use std::{error::Error as StdError, fmt, io, iter, vec};
 /// ```rust
 /// use serde_derive::Serialize;
 /// use serde;
-/// use fixed_width::{Field, FixedWidth};
+/// use fixed_width::{FieldSet, FixedWidth};
 ///
 /// #[derive(Serialize)]
 /// struct Record {
@@ -18,20 +18,18 @@ use std::{error::Error as StdError, fmt, io, iter, vec};
 /// }
 ///
 /// impl FixedWidth for Record {
-///     fn fields() -> Vec<Field> {
-///         vec![
-///             Field::default().range(0..4),
-///             Field::default().range(4..8),
-///         ]
+///     fn fields() -> FieldSet {
+///         FieldSet::Seq(vec![
+///             FieldSet::new_field(0..4),
+///             FieldSet::new_field(4..8),
+///         ])
 ///     }
 /// }
 ///
-/// fn main() {
-///     let record = Record { name: "Carl".to_string(), room: 1234 };
-///     let s = fixed_width::to_string(&record).unwrap();
+/// let record = Record { name: "Carl".to_string(), room: 1234 };
+/// let s = fixed_width::to_string(&record).unwrap();
 ///
-///     assert_eq!(s, "Carl1234");
-/// }
+/// assert_eq!(s, "Carl1234");
 /// ```
 pub fn to_string<T: FixedWidth + Serialize>(record: &T) -> Result<String> {
     let mut w = Writer::from_memory();
@@ -46,7 +44,7 @@ pub fn to_string<T: FixedWidth + Serialize>(record: &T) -> Result<String> {
 /// ```rust
 /// use serde_derive::Serialize;
 /// use serde;
-/// use fixed_width::{Field, FixedWidth};
+/// use fixed_width::{FixedWidth, FieldSet};
 ///
 /// #[derive(Serialize)]
 /// struct Record {
@@ -55,20 +53,18 @@ pub fn to_string<T: FixedWidth + Serialize>(record: &T) -> Result<String> {
 /// }
 ///
 /// impl FixedWidth for Record {
-///     fn fields() -> Vec<Field> {
-///         vec![
-///             Field::default().range(0..4),
-///             Field::default().range(4..8),
-///         ]
+///     fn fields() -> FieldSet {
+///         FieldSet::Seq(vec![
+///             FieldSet::new_field(0..4),
+///             FieldSet::new_field(4..8),
+///         ])
 ///     }
 /// }
 ///
-/// fn main() {
-///     let record = Record { name: "Carl".to_string(), room: 1234 };
-///     let s = fixed_width::to_bytes(&record).unwrap();
+/// let record = Record { name: "Carl".to_string(), room: 1234 };
+/// let s = fixed_width::to_bytes(&record).unwrap();
 ///
-///     assert_eq!(&s, b"Carl1234");
-/// }
+/// assert_eq!(&s, b"Carl1234");
 /// ```
 pub fn to_bytes<T: FixedWidth + Serialize>(record: &T) -> Result<Vec<u8>> {
     let mut w = Writer::from_memory();
@@ -84,7 +80,7 @@ pub fn to_bytes<T: FixedWidth + Serialize>(record: &T) -> Result<Vec<u8>> {
 /// ```rust
 /// use serde_derive::Serialize;
 /// use serde;
-/// use fixed_width::{Field, FixedWidth, Writer};
+/// use fixed_width::{FixedWidth, Writer, FieldSet};
 ///
 /// #[derive(Serialize)]
 /// struct Person {
@@ -93,27 +89,25 @@ pub fn to_bytes<T: FixedWidth + Serialize>(record: &T) -> Result<Vec<u8>> {
 /// }
 ///
 /// impl FixedWidth for Person {
-///     fn fields() -> Vec<Field> {
-///         vec![
-///             Field::default().range(0..8),
-///             Field::default().range(8..10),
-///         ]
+///     fn fields() -> FieldSet {
+///         FieldSet::Seq(vec![
+///             FieldSet::new_field(0..8),
+///             FieldSet::new_field(8..10),
+///         ])
 ///     }
 /// }
 ///
-/// fn main() {
-///     let mut w = Writer::from_memory();
+/// let mut w = Writer::from_memory();
 ///
-///     let person = Person {
-///         name: "coolname".to_string(),
-///         age: 25,
-///     };
+/// let person = Person {
+///     name: "coolname".to_string(),
+///     age: 25,
+/// };
 ///
-///     fixed_width::to_writer(&mut w, &person).unwrap();
+/// fixed_width::to_writer(&mut w, &person).unwrap();
 ///
-///     let s: String = w.into();
-///     assert_eq!("coolname25", s);
-/// }
+/// let s: String = w.into();
+/// assert_eq!("coolname25", s);
 /// ```
 pub fn to_writer<'w, T, W>(wrtr: &'w mut W, val: &T) -> Result<()>
 where
@@ -128,12 +122,12 @@ where
 /// ### Example
 ///
 /// ```rust
-/// use fixed_width::{Field, Writer, to_writer_with_fields};
+/// use fixed_width::{FieldSet, Writer, to_writer_with_fields};
 ///
-/// let fields = vec![
-///     Field::default().range(0..4),
-///     Field::default().range(4..8),
-/// ];
+/// let fields = FieldSet::Seq(vec![
+///     FieldSet::new_field(0..4),
+///     FieldSet::new_field(4..8),
+/// ]);
 /// let mut w = Writer::from_memory();
 /// let data = vec!["1234", "abcd"];
 ///
@@ -142,7 +136,7 @@ where
 /// let s: String = w.into();
 /// assert_eq!("1234abcd", s);
 /// ```
-pub fn to_writer_with_fields<'w, T, W>(wrtr: &'w mut W, val: &T, fields: Vec<Field>) -> Result<()>
+pub fn to_writer_with_fields<'w, T, W>(wrtr: &'w mut W, val: &T, fields: FieldSet) -> Result<()>
 where
     T: Serialize,
     W: 'w + io::Write,
@@ -167,7 +161,7 @@ impl fmt::Display for SerializeError {
         match self {
             SerializeError::Message(ref e) => write!(f, "{}", e),
             SerializeError::Unsupported(ref e) => write!(f, "{}", e),
-            SerializeError::UnexpectedEndOfFields => write!(f, "{}", self.to_string()),
+            SerializeError::UnexpectedEndOfFields => write!(f, "Unexpected End of Fields"),
         }
     }
 }
@@ -187,7 +181,7 @@ impl SerError for Error {
 /// A serializer for fixed width data. Writes to the given Writer using the provided field
 /// definitions to determine how to serialize data into records.
 pub struct Serializer<'w, W: 'w + io::Write> {
-    fields: iter::Peekable<vec::IntoIter<Field>>,
+    fields: iter::Peekable<vec::IntoIter<FieldConfig>>,
     wrtr: &'w mut W,
 }
 
@@ -198,13 +192,13 @@ impl<'w, W: 'w + io::Write> Serializer<'w, W> {
     ///
     /// ```rust
     /// use serde;
-    /// use fixed_width::{Field, Serializer, Writer};
+    /// use fixed_width::{FieldSet, Serializer, Writer};
     /// use serde::Serialize;
     ///
-    /// let fields = vec![
-    ///     Field::default().range(0..4).name(Some("letters")),
-    ///     Field::default().range(4..8).name(Some("numbers")),
-    /// ];
+    /// let fields = FieldSet::Seq(vec![
+    ///     FieldSet::new_field(0..4).name("letters"),
+    ///     FieldSet::new_field(4..8).name("numbers"),
+    /// ]);
     ///
     /// let mut writer = Writer::from_memory();
     /// let mut record = vec!["abcd", "1234"];
@@ -217,14 +211,14 @@ impl<'w, W: 'w + io::Write> Serializer<'w, W> {
     /// let s: String = writer.into();
     /// assert_eq!("abcd1234", s);
     /// ```
-    pub fn new(wrtr: &'w mut W, fields: Vec<Field>) -> Self {
+    pub fn new(wrtr: &'w mut W, fields: FieldSet) -> Self {
         Self {
-            fields: fields.into_iter().peekable(),
+            fields: fields.flatten().into_iter().peekable(),
             wrtr,
         }
     }
 
-    fn next_field(&mut self) -> Result<Field> {
+    fn next_field(&mut self) -> Result<FieldConfig> {
         match self.fields.next() {
             Some(f) => Ok(f),
             None => Err(Error::from(SerializeError::UnexpectedEndOfFields)),
@@ -242,7 +236,7 @@ macro_rules! serialize_with_str {
         fn $ser_fn(self, val: $int_ty) -> Result<Self::Ok> {
             self.serialize_str(&val.to_string())
         }
-    }
+    };
 }
 
 impl<'a, 'w, W: io::Write> ser::Serializer for &'a mut Serializer<'w, W> {
@@ -274,7 +268,7 @@ impl<'a, 'w, W: io::Write> ser::Serializer for &'a mut Serializer<'w, W> {
 
     fn serialize_str(self, val: &str) -> Result<Self::Ok> {
         let bytes = val.as_bytes();
-        self.serialize_bytes(&bytes)
+        self.serialize_bytes(bytes)
     }
 
     fn serialize_bytes(self, val: &[u8]) -> Result<Self::Ok> {
@@ -476,7 +470,7 @@ impl<'a, 'w, W: io::Write> ser::SerializeStructVariant for &'a mut Serializer<'w
 }
 
 #[inline]
-fn pad(bytes: &[u8], field: &Field) -> Vec<u8> {
+fn pad(bytes: &[u8], field: &FieldConfig) -> Vec<u8> {
     let width = field.width();
     let pad = field.pad_with as u8;
     let mut v = bytes.to_vec();
@@ -498,7 +492,7 @@ fn pad(bytes: &[u8], field: &Field) -> Vec<u8> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{Field, FixedWidth, Writer};
+    use crate::{FieldSet, FixedWidth, Writer};
     use serde_bytes::ByteBuf;
     use serde_derive::Serialize;
     use std::collections::HashMap;
@@ -506,7 +500,7 @@ mod test {
     #[test]
     fn bool_ser() {
         let mut wrtr = Writer::from_memory();
-        let fields = vec![Field::default().range(0..1)];
+        let fields = FieldSet::new_field(0..1);
         to_writer_with_fields(&mut wrtr, &true, fields.clone()).unwrap();
         to_writer_with_fields(&mut wrtr, &false, fields.clone()).unwrap();
         let s: String = wrtr.into();
@@ -517,7 +511,7 @@ mod test {
     #[test]
     fn int_ser() {
         let mut wrtr = Writer::from_memory();
-        let fields = vec![Field::default().range(0..4)];
+        let fields = FieldSet::new_field(0..4);
 
         to_writer_with_fields(&mut wrtr, &123_u8, fields.clone()).unwrap();
         to_writer_with_fields(&mut wrtr, &-123_i8, fields.clone()).unwrap();
@@ -535,7 +529,7 @@ mod test {
     #[test]
     fn float_ser() {
         let mut wrtr = Writer::from_memory();
-        let fields = vec![Field::default().range(0..4)];
+        let fields = FieldSet::new_field(0..4);
 
         to_writer_with_fields(&mut wrtr, &(12.3 as f32), fields.clone()).unwrap();
         to_writer_with_fields(&mut wrtr, &(-2.3 as f32), fields.clone()).unwrap();
@@ -549,10 +543,10 @@ mod test {
     #[test]
     fn str_ser() {
         let mut wrtr = Writer::from_memory();
-        let fields = vec![Field::default().range(0..4)];
+        let fields = FieldSet::new_field(0..4);
 
         let st = "foo".to_string();
-        to_writer_with_fields(&mut wrtr, &st, fields.clone()).unwrap();
+        to_writer_with_fields(&mut wrtr, &st, fields).unwrap();
 
         let s: String = wrtr.into();
         assert_eq!(s, "foo ");
@@ -561,10 +555,10 @@ mod test {
     #[test]
     fn bytes_ser() {
         let mut wrtr = Writer::from_memory();
-        let fields = vec![Field::default().range(0..4)];
+        let fields = FieldSet::new_field(0..4);
 
         let bytes = ByteBuf::from(b"foo".to_vec());
-        to_writer_with_fields(&mut wrtr, &bytes, fields.clone()).unwrap();
+        to_writer_with_fields(&mut wrtr, &bytes, fields).unwrap();
 
         let s: String = wrtr.into();
         assert_eq!(s, "foo ");
@@ -573,10 +567,10 @@ mod test {
     #[test]
     fn none_ser() {
         let mut wrtr = Writer::from_memory();
-        let fields = vec![Field::default().range(0..4)];
+        let fields = FieldSet::new_field(0..4);
 
         let none: Option<usize> = None;
-        to_writer_with_fields(&mut wrtr, &none, fields.clone()).unwrap();
+        to_writer_with_fields(&mut wrtr, &none, fields).unwrap();
 
         let s: String = wrtr.into();
         assert_eq!(s, "    ");
@@ -585,9 +579,9 @@ mod test {
     #[test]
     fn some_ser() {
         let mut wrtr = Writer::from_memory();
-        let fields = vec![Field::default().range(0..4)];
+        let fields = FieldSet::new_field(0..4);
 
-        to_writer_with_fields(&mut wrtr, &Some(" foo"), fields.clone()).unwrap();
+        to_writer_with_fields(&mut wrtr, &Some(" foo"), fields).unwrap();
 
         let s: String = wrtr.into();
         assert_eq!(s, " foo");
@@ -596,9 +590,9 @@ mod test {
     #[test]
     fn unit_ser() {
         let mut wrtr = Writer::from_memory();
-        let fields = vec![Field::default().range(0..4)];
+        let fields = FieldSet::new_field(0..4);
 
-        to_writer_with_fields(&mut wrtr, &(), fields.clone()).unwrap();
+        to_writer_with_fields(&mut wrtr, &(), fields).unwrap();
 
         let s: String = wrtr.into();
         assert_eq!(s, "    ");
@@ -610,9 +604,9 @@ mod test {
     #[test]
     fn unit_struct_ser() {
         let mut wrtr = Writer::from_memory();
-        let fields = vec![Field::default().range(0..4)];
+        let fields = FieldSet::new_field(0..4);
 
-        to_writer_with_fields(&mut wrtr, &Unit, fields.clone()).unwrap();
+        to_writer_with_fields(&mut wrtr, &Unit, fields).unwrap();
 
         let s: String = wrtr.into();
         assert_eq!(s, "    ");
@@ -624,9 +618,9 @@ mod test {
     #[test]
     fn newtype_struct_ser() {
         let mut wrtr = Writer::from_memory();
-        let fields = vec![Field::default().range(0..4)];
+        let fields = FieldSet::new_field(0..4);
 
-        to_writer_with_fields(&mut wrtr, &Newtype(123), fields.clone()).unwrap();
+        to_writer_with_fields(&mut wrtr, &Newtype(123), fields).unwrap();
 
         let s: String = wrtr.into();
         assert_eq!(s, "123 ");
@@ -635,9 +629,9 @@ mod test {
     #[test]
     fn seq_ser() {
         let mut wrtr = Writer::from_memory();
-        let fields = vec![Field::default().range(0..4), Field::default().range(0..3)];
+        let fields = FieldSet::Seq(vec![FieldSet::new_field(0..4), FieldSet::new_field(0..3)]);
 
-        to_writer_with_fields(&mut wrtr, &[111, 222], fields.clone()).unwrap();
+        to_writer_with_fields(&mut wrtr, &[111, 222], fields).unwrap();
 
         let s: String = wrtr.into();
         assert_eq!(s, "111 222");
@@ -646,9 +640,9 @@ mod test {
     #[test]
     fn tuple_ser() {
         let mut wrtr = Writer::from_memory();
-        let fields = vec![Field::default().range(0..4), Field::default().range(0..3)];
+        let fields = FieldSet::Seq(vec![FieldSet::new_field(0..4), FieldSet::new_field(0..3)]);
 
-        to_writer_with_fields(&mut wrtr, &(111, 222), fields.clone()).unwrap();
+        to_writer_with_fields(&mut wrtr, &(111, 222), fields).unwrap();
 
         let s: String = wrtr.into();
         assert_eq!(s, "111 222");
@@ -660,9 +654,9 @@ mod test {
     #[test]
     fn tuple_struct_ser() {
         let mut wrtr = Writer::from_memory();
-        let fields = vec![Field::default().range(0..4), Field::default().range(0..3)];
+        let fields = FieldSet::Seq(vec![FieldSet::new_field(0..4), FieldSet::new_field(0..3)]);
 
-        to_writer_with_fields(&mut wrtr, &Tuple(111, 222), fields.clone()).unwrap();
+        to_writer_with_fields(&mut wrtr, &Tuple(111, 222), fields).unwrap();
 
         let s: String = wrtr.into();
         assert_eq!(s, "111 222");
@@ -671,13 +665,13 @@ mod test {
     #[test]
     fn map_ser() {
         let mut wrtr = Writer::from_memory();
-        let fields = vec![Field::default().range(0..4), Field::default().range(0..3)];
+        let fields = FieldSet::Seq(vec![FieldSet::new_field(0..4), FieldSet::new_field(0..3)]);
 
         let mut h = HashMap::new();
         h.insert("foo", 123);
         h.insert("bar", 456);
 
-        let res = to_writer_with_fields(&mut wrtr, &h, fields.clone());
+        let res = to_writer_with_fields(&mut wrtr, &h, fields);
 
         match res {
             Ok(_) => assert!(false, "should not be Ok"),
@@ -695,13 +689,13 @@ mod test {
     }
 
     impl FixedWidth for Test1 {
-        fn fields() -> Vec<Field> {
-            vec![
-                Field::default().range(0..3),
-                Field::default().range(3..6),
-                Field::default().range(6..10),
-                Field::default().range(10..13),
-            ]
+        fn fields() -> FieldSet {
+            FieldSet::Seq(vec![
+                FieldSet::new_field(0..3),
+                FieldSet::new_field(3..6),
+                FieldSet::new_field(6..10),
+                FieldSet::new_field(10..13),
+            ])
         }
     }
 
@@ -724,15 +718,15 @@ mod test {
     #[test]
     fn pad_left_justified() {
         let inputs = vec!["123456789".as_bytes(), "12345".as_bytes(), "123".as_bytes()];
-        let field = Field::default()
-            .range(0..5)
+        let field = &FieldSet::new_field(0..5)
             .justify(Justify::Left)
-            .pad_with('T');
+            .pad_with('T')
+            .flatten()[0];
 
         let expected = vec!["12345".as_bytes(), "12345".as_bytes(), "123TT".as_bytes()];
 
         for (i, input) in inputs.iter().enumerate() {
-            let padded = pad(input, &field);
+            let padded = pad(input, field);
             assert_eq!(padded, expected[i].to_vec());
         }
     }
@@ -740,15 +734,15 @@ mod test {
     #[test]
     fn pad_right_justified() {
         let inputs = vec!["123456789".as_bytes(), "12345".as_bytes(), "123".as_bytes()];
-        let field = Field::default()
-            .range(0..5)
+        let field = &FieldSet::new_field(0..5)
             .justify(Justify::Right)
-            .pad_with('T');
+            .pad_with('T')
+            .flatten()[0];
 
         let expected = vec!["12345".as_bytes(), "12345".as_bytes(), "TT123".as_bytes()];
 
         for (i, input) in inputs.iter().enumerate() {
-            let padded = pad(input, &field);
+            let padded = pad(input, field);
             println!("{:?}", padded);
             assert_eq!(padded, expected[i].to_vec());
         }
@@ -778,5 +772,51 @@ mod test {
 
         let b = to_bytes(&test).unwrap();
         assert_eq!(b, b"123abc987612 ".to_vec());
+    }
+
+    #[derive(Serialize)]
+    struct Test2 {
+        a: Test1,
+        b: Test1,
+    }
+
+    impl FixedWidth for Test2 {
+        fn fields() -> FieldSet {
+            FieldSet::Seq(vec![
+                FieldSet::Seq(vec![
+                    FieldSet::new_field(0..3),
+                    FieldSet::new_field(3..6),
+                    FieldSet::new_field(6..10),
+                    FieldSet::new_field(10..13),
+                ]),
+                FieldSet::Seq(vec![
+                    FieldSet::new_field(13..16),
+                    FieldSet::new_field(16..19),
+                    FieldSet::new_field(19..23),
+                    FieldSet::new_field(23..26),
+                ]),
+            ])
+        }
+    }
+
+    #[test]
+    fn nested_struct() {
+        let test = Test2 {
+            a: Test1 {
+                a: 123,
+                b: "abc".to_string(),
+                c: 9876.0,
+                d: Some(12),
+            },
+            b: Test1 {
+                a: 321,
+                b: "cba".to_string(),
+                c: 6789.0,
+                d: Some(21),
+            },
+        };
+
+        let s = to_string(&test).unwrap();
+        assert_eq!(s, "123abc987612 321cba678921 ".to_string());
     }
 }
