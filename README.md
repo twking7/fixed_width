@@ -2,7 +2,7 @@
 
 [Build Status]: https://travis-ci.org/twking7/fixed_width.svg?branch=master
 [travis]: https://travis-ci.org/twking7/fixed_width
-[Latest Version]: https://img.shields.io/badge/crates.io-0.4.1-blue.svg
+[Latest Version]: https://img.shields.io/badge/crates.io-0.5.0-blue.svg
 [crates.io]: https://crates.io/crates/fixed_width
 [Documents]: https://img.shields.io/docsrs/fixed_width/latest
 [docs.rs]: https://docs.rs/fixed_width
@@ -21,10 +21,10 @@ Add as a dependency:
 
 ```toml
 [dependencies]
-fixed_width = "0.4"
+fixed_width = "0.5"
 
 # Optionally, if you are running Rust version 1.30.0 or above and want to derive fixed width field definitions:
-fixed_width_derive = "0.4"
+fixed_width_derive = "0.5"
 ```
 
 in the root of your crate:

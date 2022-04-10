@@ -9,8 +9,8 @@ The derive only works on structs. Additionally, this crate uses features that re
 Start by adding the dependency to your project in `Cargo.toml`:
 
 ```toml
-fixed_width = "0.4"
-fixed_width_derive = "0.4"
+fixed_width = "0.5"
+fixed_width_derive = "0.5"
 ```
 
 # Usage

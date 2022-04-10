@@ -25,7 +25,7 @@ type.
 Start by adding the dependency to your project in `Cargo.toml`:
 
 ```toml
-fixed_width = "0.4"
+fixed_width = "0.5"
 ```
 
 Then in the root of your project:
@@ -39,8 +39,8 @@ field definitions for your types. It is optional, but if you wish to use it you 
 project like so in your `Cargo.toml`:
 
 ```toml
-fixed_width = "0.4"
-fixed_width_derive = "0.4"
+fixed_width = "0.5"
+fixed_width_derive = "0.5"
 ```
 
 # Usage
