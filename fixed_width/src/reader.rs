@@ -299,10 +299,7 @@ where
 
     #[inline]
     fn has_linebreak(&self) -> bool {
-        match self.linebreak {
-            LineBreak::None => false,
-            _ => true,
-        }
+        !matches!(self.linebreak, LineBreak::None)
     }
 
     #[inline]

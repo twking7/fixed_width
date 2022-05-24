@@ -12,6 +12,6 @@ readme = "../README.md"
 serde = "1.0"
 
 [dev-dependencies]
+fixed_width_derive = { path = "../fixed_width_derive" }
 serde_bytes = "0.11"
 serde_derive = "1.0"
-fixed_width_derive = { path = "../fixed_width_derive" }

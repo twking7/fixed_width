@@ -163,11 +163,11 @@ fn build_field_def(field: &syn::Field) -> FieldDef {
             panic!("pad_with must be a char for field: {}", ctx.field_name());
         }
 
-        c.value.chars().nth(0).unwrap()
+        c.value.chars().next().unwrap()
     });
 
     let justify = match ctx.metadata.get("justify") {
-        Some(j) => match j.value.to_lowercase().trim().as_ref() {
+        Some(j) => match j.value.to_lowercase().trim() {
             "left" | "right" => j.value.clone(),
             _ => panic!(
                 "justify must be 'left' or 'right' for field: {}",
@@ -178,7 +178,7 @@ fn build_field_def(field: &syn::Field) -> FieldDef {
     };
 
     FieldDef {
-        ident: ctx.field.clone().ident.unwrap(),
+        ident: ctx.field.ident.unwrap(),
         field_type: field.ty.clone(),
         name,
         pad_with,

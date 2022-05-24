@@ -29,7 +29,7 @@ impl Context {
                 if fixed_width_attr_seen > 1 {
                     panic!(
                         "Field: {} has more than 1 fixed_width attribute",
-                        field.ident.clone().unwrap().to_string(),
+                        field.ident.clone().unwrap(),
                     );
                 }
 
@@ -38,23 +38,21 @@ impl Context {
                         let meta_items: Vec<&syn::NestedMeta> = nested.iter().collect();
 
                         for meta_item in meta_items {
-                            if let syn::NestedMeta::Meta(ref item) = meta_item {
-                                if let syn::Meta::NameValue(syn::MetaNameValue {
-                                    ref path,
-                                    ref lit,
-                                    ..
-                                }) = item
-                                {
-                                    if let syn::Lit::Str(ref s) = lit {
-                                        let ident = path.get_ident().unwrap().clone();
-                                        let mdata = Metadata {
-                                            name: ident.clone().to_string(),
-                                            value: s.value().to_string(),
-                                        };
-                                        metadata.insert(ident.clone().to_string(), mdata);
-                                    } else {
-                                        panic!("fixed_width attribute values must be strings");
-                                    }
+                            if let syn::NestedMeta::Meta(syn::Meta::NameValue(
+                                syn::MetaNameValue {
+                                    ref path, ref lit, ..
+                                },
+                            )) = meta_item
+                            {
+                                if let syn::Lit::Str(ref s) = lit {
+                                    let ident = path.get_ident().unwrap().clone();
+                                    let mdata = Metadata {
+                                        name: ident.clone().to_string(),
+                                        value: s.value().to_string(),
+                                    };
+                                    metadata.insert(ident.clone().to_string(), mdata);
+                                } else {
+                                    panic!("fixed_width attribute values must be strings");
                                 }
                             }
                         }
@@ -66,12 +64,14 @@ impl Context {
                     let meta_items: Vec<&syn::NestedMeta> = nested.iter().collect();
 
                     for meta_item in meta_items {
-                        if let syn::NestedMeta::Meta(ref item) = meta_item {
-                            if let syn::Meta::Path(syn::Path { ref segments, .. }) = item {
-                                for segment in segments {
-                                    if segment.ident.to_string() == "skip" {
-                                        skip = true;
-                                    }
+                        if let syn::NestedMeta::Meta(syn::Meta::Path(syn::Path {
+                            ref segments,
+                            ..
+                        })) = meta_item
+                        {
+                            for segment in segments {
+                                if segment.ident == "skip" {
+                                    skip = true;
                                 }
                             }
                         }
