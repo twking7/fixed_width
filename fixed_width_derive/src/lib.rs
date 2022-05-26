@@ -84,7 +84,7 @@ extern crate proc_macro2;
 #[macro_use]
 extern crate quote;
 
-use crate::field_def::{Context, FieldDef};
+use crate::field_def::{Container, Context, FieldDef};
 use proc_macro::TokenStream;
 use std::result;
 use syn::DeriveInput;
@@ -111,22 +111,46 @@ fn impl_fixed_width(ast: &DeriveInput) -> TokenStream {
     let ident = &ast.ident;
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
-    let tokens: Vec<proc_macro2::TokenStream> = fields
-        .iter()
-        .filter(should_skip)
-        .map(build_field_def)
-        .map(build_fixed_width_field)
-        .collect();
+    let container = Container::from_ast(ast);
 
-    let quote = quote! {
-        impl #impl_generics fixed_width::FixedWidth for #ident #ty_generics #where_clause {
-            fn fields() -> fixed_width::FieldSet {
-                fixed_width::field_seq![#(#tokens),*]
+    if container.fixed_width_fn.is_some() {
+        let field_def = container.fixed_width_fn.unwrap();
+
+        for field in &fields {
+            for attr in &field.attrs {
+                if attr.path.is_ident("fixed_width") {
+                    panic!("specify whether container attribue `field_def` or field attribue respectively");
+                }
             }
         }
-    };
 
-    quote.into()
+        let quote = quote! {
+            impl #impl_generics fixed_width::FixedWidth for #ident #ty_generics #where_clause {
+                fn fields() -> fixed_width::FieldSet {
+                    #field_def()
+                }
+            }
+        };
+
+        quote.into()
+    } else {
+        let tokens: Vec<proc_macro2::TokenStream> = fields
+            .iter()
+            .filter(should_skip)
+            .map(build_field_def)
+            .map(build_fixed_width_field)
+            .collect();
+
+        let quote = quote! {
+            impl #impl_generics fixed_width::FixedWidth for #ident #ty_generics #where_clause {
+                fn fields() -> fixed_width::FieldSet {
+                    fixed_width::field_seq![#(#tokens),*]
+                }
+            }
+        };
+
+        quote.into()
+    }
 }
 
 fn should_skip(field: &&syn::Field) -> bool {

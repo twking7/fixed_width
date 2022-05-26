@@ -1,6 +1,68 @@
 use std::{collections::HashMap, ops::Range};
 use syn::parse_quote;
 
+pub struct Container {
+    pub fixed_width_fn: Option<syn::Ident>,
+}
+
+impl Container {
+    pub fn from_ast(ast: &syn::DeriveInput) -> Self {
+        let mut fixed_width_fn: Option<syn::Ident> = None;
+
+        for attr in &ast.attrs {
+            if attr.path.is_ident("fixed_width") {
+                match attr.parse_meta() {
+                    Ok(syn::Meta::List(metalist)) => {
+                        if metalist.nested.len() > 1 {
+                            panic!("unexpected multiple values in fixed_width(...)")
+                        } else {
+                            match metalist.nested.first() {
+                                Some(syn::NestedMeta::Meta(syn::Meta::NameValue(
+                                    syn::MetaNameValue { path, lit, .. },
+                                ))) => match path.get_ident() {
+                                    Some(id) if id == "field_def" => {
+                                        if fixed_width_fn.is_some() {
+                                            panic!("unexpected multiple definition of field_def");
+                                        }
+                                        match lit {
+                                            syn::Lit::Str(litstr) => {
+                                                fixed_width_fn = Some(syn::Ident::new(
+                                                    &litstr.value(),
+                                                    proc_macro2::Span::call_site(),
+                                                ))
+                                            }
+                                            _ => panic!("expected string literal for field_def"),
+                                        };
+                                    }
+                                    Some(id) => {
+                                        panic!("unknown fixed_width container attribute: {}", id)
+                                    }
+                                    _ => unreachable!(),
+                                },
+                                Some(syn::NestedMeta::Meta(meta)) => {
+                                    panic!(
+                                        "invalid fixed_width container attribute: {}",
+                                        meta.path().get_ident().unwrap()
+                                    )
+                                }
+                                Some(syn::NestedMeta::Lit(_)) => {
+                                    panic!("unexpected literal in fixed_width container attribute")
+                                }
+                                None => panic!("expected fixed_width(field_def = \"...\")"),
+                            }
+                        }
+                    }
+                    _ => {
+                        panic!("expected fixed_width(...)")
+                    }
+                }
+            }
+        }
+
+        Self { fixed_width_fn }
+    }
+}
+
 #[derive(Debug)]
 pub struct FieldDef {
     pub ident: syn::Ident,
