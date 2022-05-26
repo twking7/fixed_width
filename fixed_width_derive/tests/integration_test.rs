@@ -14,7 +14,7 @@ struct Stuff {
     pub stuff3: usize,
     #[fixed_width(range = "15..19")]
     pub stuff4: usize,
-    #[fixed_width(range = "21..27", default = "foobar")]
+    #[fixed_width(range = "21..27")]
     pub stuff5: String,
     #[fixed_width(range = "27..31", justify = "right")]
     pub stuff6: String,
@@ -61,7 +61,7 @@ struct SkippedStuff {
     pub skipped: i64,
     #[fixed_width(range = "15..19")]
     pub stuff4: usize,
-    #[fixed_width(range = "21..27", default = "foobar")]
+    #[fixed_width(range = "21..27")]
     pub stuff5: String,
     #[fixed_width(range = "27..31", justify = "right")]
     pub stuff6: String,
