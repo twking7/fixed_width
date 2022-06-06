@@ -1,5 +1,9 @@
 use fixed_width::{LineBreak, Reader, Writer};
-use std::{fs::{self, File}, io::Write, result};
+use std::{
+    fs::{self, File},
+    io::Write,
+    result,
+};
 
 #[test]
 fn read_from_file() {

@@ -191,23 +191,23 @@ impl Writer<Vec<u8>> {
     }
 }
 
-impl Into<Vec<u8>> for Writer<Vec<u8>> {
+impl From<Writer<Vec<u8>>> for Vec<u8> {
     /// Converts the writer into a `Vec<u8>`, but panics if unable to flush to the underlying
     /// writer.
-    fn into(mut self) -> Vec<u8> {
-        match self.wrtr.flush() {
+    fn from(mut writer: Writer<Vec<u8>>) -> Self {
+        match writer.wrtr.flush() {
             Err(e) => panic!("could not flush bytes: {}", e),
-            Ok(()) => self.wrtr.into_inner().unwrap(),
+            Ok(()) => writer.wrtr.into_inner().unwrap(),
         }
     }
 }
 
-impl Into<String> for Writer<Vec<u8>> {
+impl From<Writer<Vec<u8>>> for String {
     /// Converts the writer into a `String`, but panics if unable to flush to the underlying
-    fn into(mut self) -> String {
-        match self.wrtr.flush() {
+    fn from(mut writer: Writer<Vec<u8>>) -> Self {
+        match writer.wrtr.flush() {
             Err(e) => panic!("could not flush bytes: {}", e),
-            Ok(()) => String::from_utf8(self.into()).unwrap(),
+            Ok(()) => String::from_utf8(writer.into()).unwrap(),
         }
     }
 }

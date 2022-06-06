@@ -1,6 +1,68 @@
 use std::{collections::HashMap, ops::Range};
 use syn::parse_quote;
 
+pub struct Container {
+    pub fixed_width_fn: Option<syn::Ident>,
+}
+
+impl Container {
+    pub fn from_ast(ast: &syn::DeriveInput) -> Self {
+        let mut fixed_width_fn: Option<syn::Ident> = None;
+
+        for attr in &ast.attrs {
+            if attr.path.is_ident("fixed_width") {
+                match attr.parse_meta() {
+                    Ok(syn::Meta::List(metalist)) => {
+                        if metalist.nested.len() > 1 {
+                            panic!("unexpected multiple values in fixed_width(...)")
+                        } else {
+                            match metalist.nested.first() {
+                                Some(syn::NestedMeta::Meta(syn::Meta::NameValue(
+                                    syn::MetaNameValue { path, lit, .. },
+                                ))) => match path.get_ident() {
+                                    Some(id) if id == "field_def" => {
+                                        if fixed_width_fn.is_some() {
+                                            panic!("unexpected multiple definition of field_def");
+                                        }
+                                        match lit {
+                                            syn::Lit::Str(litstr) => {
+                                                fixed_width_fn = Some(syn::Ident::new(
+                                                    &litstr.value(),
+                                                    proc_macro2::Span::call_site(),
+                                                ))
+                                            }
+                                            _ => panic!("expected string literal for field_def"),
+                                        };
+                                    }
+                                    Some(id) => {
+                                        panic!("unknown fixed_width container attribute: {}", id)
+                                    }
+                                    _ => unreachable!(),
+                                },
+                                Some(syn::NestedMeta::Meta(meta)) => {
+                                    panic!(
+                                        "invalid fixed_width container attribute: {}",
+                                        meta.path().get_ident().unwrap()
+                                    )
+                                }
+                                Some(syn::NestedMeta::Lit(_)) => {
+                                    panic!("unexpected literal in fixed_width container attribute")
+                                }
+                                None => panic!("expected fixed_width(field_def = \"...\")"),
+                            }
+                        }
+                    }
+                    _ => {
+                        panic!("expected fixed_width(...)")
+                    }
+                }
+            }
+        }
+
+        Self { fixed_width_fn }
+    }
+}
+
 #[derive(Debug)]
 pub struct FieldDef {
     pub ident: syn::Ident,
@@ -29,7 +91,7 @@ impl Context {
                 if fixed_width_attr_seen > 1 {
                     panic!(
                         "Field: {} has more than 1 fixed_width attribute",
-                        field.ident.clone().unwrap().to_string(),
+                        field.ident.clone().unwrap(),
                     );
                 }
 
@@ -38,23 +100,21 @@ impl Context {
                         let meta_items: Vec<&syn::NestedMeta> = nested.iter().collect();
 
                         for meta_item in meta_items {
-                            if let syn::NestedMeta::Meta(ref item) = meta_item {
-                                if let syn::Meta::NameValue(syn::MetaNameValue {
-                                    ref path,
-                                    ref lit,
-                                    ..
-                                }) = item
-                                {
-                                    if let syn::Lit::Str(ref s) = lit {
-                                        let ident = path.get_ident().unwrap().clone();
-                                        let mdata = Metadata {
-                                            name: ident.clone().to_string(),
-                                            value: s.value().to_string(),
-                                        };
-                                        metadata.insert(ident.clone().to_string(), mdata);
-                                    } else {
-                                        panic!("fixed_width attribute values must be strings");
-                                    }
+                            if let syn::NestedMeta::Meta(syn::Meta::NameValue(
+                                syn::MetaNameValue {
+                                    ref path, ref lit, ..
+                                },
+                            )) = meta_item
+                            {
+                                if let syn::Lit::Str(ref s) = lit {
+                                    let ident = path.get_ident().unwrap().clone();
+                                    let mdata = Metadata {
+                                        name: ident.clone().to_string(),
+                                        value: s.value().to_string(),
+                                    };
+                                    metadata.insert(ident.clone().to_string(), mdata);
+                                } else {
+                                    panic!("fixed_width attribute values must be strings");
                                 }
                             }
                         }
@@ -66,12 +126,14 @@ impl Context {
                     let meta_items: Vec<&syn::NestedMeta> = nested.iter().collect();
 
                     for meta_item in meta_items {
-                        if let syn::NestedMeta::Meta(ref item) = meta_item {
-                            if let syn::Meta::Path(syn::Path { ref segments, .. }) = item {
-                                for segment in segments {
-                                    if segment.ident.to_string() == "skip" {
-                                        skip = true;
-                                    }
+                        if let syn::NestedMeta::Meta(syn::Meta::Path(syn::Path {
+                            ref segments,
+                            ..
+                        })) = meta_item
+                        {
+                            for segment in segments {
+                                if segment.ident == "skip" {
+                                    skip = true;
                                 }
                             }
                         }

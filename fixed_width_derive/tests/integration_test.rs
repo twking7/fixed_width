@@ -1,4 +1,4 @@
-use fixed_width::{from_bytes, DeserializeError, Deserializer, FixedWidth, Reader, Serializer};
+use fixed_width::{DeserializeError, Deserializer, FixedWidth, Reader, Serializer};
 use fixed_width_derive::FixedWidth;
 use serde::{Deserialize, Serialize};
 use serde_derive::{Deserialize, Serialize};
@@ -14,7 +14,7 @@ struct Stuff {
     pub stuff3: usize,
     #[fixed_width(range = "15..19")]
     pub stuff4: usize,
-    #[fixed_width(range = "21..27", default = "foobar")]
+    #[fixed_width(range = "21..27")]
     pub stuff5: String,
     #[fixed_width(range = "27..31", justify = "right")]
     pub stuff6: String,
@@ -61,10 +61,25 @@ struct SkippedStuff {
     pub skipped: i64,
     #[fixed_width(range = "15..19")]
     pub stuff4: usize,
-    #[fixed_width(range = "21..27", default = "foobar")]
+    #[fixed_width(range = "21..27")]
     pub stuff5: String,
     #[fixed_width(range = "27..31", justify = "right")]
     pub stuff6: String,
+}
+
+fn field_def_fields() -> fixed_width::FieldSet {
+    fixed_width::FieldSet::Seq(vec![
+        fixed_width::FieldSet::new_field(0..3),
+        fixed_width::FieldSet::new_field(3..9),
+    ])
+}
+
+#[derive(FixedWidth, Deserialize)]
+#[fixed_width(field_def = "field_def_fields")]
+#[allow(dead_code)]
+struct ByFieldDef {
+    pub id: usize,
+    pub name: String,
 }
 
 #[test]
@@ -166,12 +181,12 @@ fn test_multiple_record_types() {
     while let Some(Ok(bytes)) = reader.next_record() {
         match bytes.get(0) {
             Some(b'0') => {
-                let Record1 { state, .. } = from_bytes(bytes).unwrap();
+                let Record1 { state, .. } = fixed_width::from_bytes(bytes).unwrap();
                 rec1 = true;
                 assert_eq!(state, "OHIO");
             }
             Some(b'1') => {
-                let Record2 { name, .. } = from_bytes(bytes).unwrap();
+                let Record2 { name, .. } = fixed_width::from_bytes(bytes).unwrap();
                 rec2 = true;
                 assert_eq!(name, "BOB");
             }
@@ -195,4 +210,13 @@ fn test_deserialize_with_skipped_fields() {
     assert_eq!(stuff.stuff4, 9);
     assert_eq!(stuff.stuff5, "foobar");
     assert_eq!(stuff.stuff6, "123");
+}
+
+#[test]
+fn test_specify_fields_by_field_def() {
+    let record = "999foobar";
+    let data: ByFieldDef = fixed_width::from_str(record).unwrap();
+
+    assert_eq!(data.id, 999);
+    assert_eq!(data.name, "foobar");
 }
