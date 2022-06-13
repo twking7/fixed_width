@@ -1,6 +1,6 @@
 [package]
 name = "fixed_width_derive"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Tom King <twking7@gmail.com>"]
 repository = "https://github.com/twking7/fixed_width/fixed_width_derive"
 description = "Derive trait for use with the fixed_width crate."

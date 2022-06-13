@@ -1,6 +1,6 @@
 [package]
 name = "fixed_width"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Tom King <twking7@gmail.com>"]
 repository = "https://github.com/twking7/fixed_width"
 description = "A fixed width data parser."

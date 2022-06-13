@@ -2,7 +2,7 @@
 
 [Build Status]: https://travis-ci.org/twking7/fixed_width.svg?branch=master
 [travis]: https://travis-ci.org/twking7/fixed_width
-[Latest Version]: https://img.shields.io/badge/crates.io-0.5.0-blue.svg
+[Latest Version]: https://img.shields.io/badge/crates.io-0.5.1-blue.svg
 [crates.io]: https://crates.io/crates/fixed_width
 [Documents]: https://img.shields.io/docsrs/fixed_width/latest
 [docs.rs]: https://docs.rs/fixed_width
