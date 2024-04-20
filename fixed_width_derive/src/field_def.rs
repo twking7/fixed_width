@@ -1,5 +1,5 @@
 use std::{collections::HashMap, ops::Range};
-use syn::parse_quote;
+use syn::LitStr;
 
 pub struct Container {
     pub fixed_width_fn: Option<syn::Ident>,
@@ -10,52 +10,20 @@ impl Container {
         let mut fixed_width_fn: Option<syn::Ident> = None;
 
         for attr in &ast.attrs {
-            if attr.path.is_ident("fixed_width") {
-                match attr.parse_meta() {
-                    Ok(syn::Meta::List(metalist)) => {
-                        if metalist.nested.len() > 1 {
-                            panic!("unexpected multiple values in fixed_width(...)")
+            if attr.path().is_ident("fixed_width") {
+                attr.parse_nested_meta(|meta| {
+                    if meta.path.is_ident("field_def") {
+                        let value = meta.value().expect("expected to find an expression, ie fixed_width(field_def = function_name)");
+                        let fixed_width_fn_name: LitStr = value.parse().expect("expected to find a function name, ie fixed_width(field_def = function_name)");
+
+                        if fixed_width_fn.is_some() {
+                            panic!("expected only 1 function to be specified for the field_def");
                         } else {
-                            match metalist.nested.first() {
-                                Some(syn::NestedMeta::Meta(syn::Meta::NameValue(
-                                    syn::MetaNameValue { path, lit, .. },
-                                ))) => match path.get_ident() {
-                                    Some(id) if id == "field_def" => {
-                                        if fixed_width_fn.is_some() {
-                                            panic!("unexpected multiple definition of field_def");
-                                        }
-                                        match lit {
-                                            syn::Lit::Str(litstr) => {
-                                                fixed_width_fn = Some(syn::Ident::new(
-                                                    &litstr.value(),
-                                                    proc_macro2::Span::call_site(),
-                                                ))
-                                            }
-                                            _ => panic!("expected string literal for field_def"),
-                                        };
-                                    }
-                                    Some(id) => {
-                                        panic!("unknown fixed_width container attribute: {}", id)
-                                    }
-                                    _ => unreachable!(),
-                                },
-                                Some(syn::NestedMeta::Meta(meta)) => {
-                                    panic!(
-                                        "invalid fixed_width container attribute: {}",
-                                        meta.path().get_ident().unwrap()
-                                    )
-                                }
-                                Some(syn::NestedMeta::Lit(_)) => {
-                                    panic!("unexpected literal in fixed_width container attribute")
-                                }
-                                None => panic!("expected fixed_width(field_def = \"...\")"),
-                            }
+                            fixed_width_fn = Some(syn::Ident::new(&fixed_width_fn_name.value(), proc_macro2::Span::call_site()));
                         }
                     }
-                    _ => {
-                        panic!("expected fixed_width(...)")
-                    }
-                }
+                    Ok(())
+                }).expect("expected fixed_width(...)");
             }
         }
 
@@ -86,7 +54,7 @@ impl Context {
         let mut skip = false;
 
         for attr in &field.attrs {
-            if attr.path == parse_quote!(fixed_width) {
+            if attr.path().is_ident("fixed_width") {
                 fixed_width_attr_seen += 1;
                 if fixed_width_attr_seen > 1 {
                     panic!(
@@ -95,49 +63,43 @@ impl Context {
                     );
                 }
 
-                match attr.parse_meta() {
-                    Ok(syn::Meta::List(syn::MetaList { ref nested, .. })) => {
-                        let meta_items: Vec<&syn::NestedMeta> = nested.iter().collect();
+                let parse_result = attr.parse_nested_meta(|meta| {
+                    let ident = meta.path.get_ident().unwrap().clone();
+                    let s: LitStr = meta
+                        .value()
+                        .expect(
+                            "expected to find an expression, ie fixed_width(<field> = <metadata>)",
+                        )
+                        .parse()
+                        .expect("fixed width values must be strings");
 
-                        for meta_item in meta_items {
-                            if let syn::NestedMeta::Meta(syn::Meta::NameValue(
-                                syn::MetaNameValue {
-                                    ref path, ref lit, ..
-                                },
-                            )) = meta_item
-                            {
-                                if let syn::Lit::Str(ref s) = lit {
-                                    let ident = path.get_ident().unwrap().clone();
-                                    let mdata = Metadata {
-                                        name: ident.clone().to_string(),
-                                        value: s.value().to_string(),
-                                    };
-                                    metadata.insert(ident.clone().to_string(), mdata);
-                                } else {
-                                    panic!("fixed_width attribute values must be strings");
-                                }
-                            }
-                        }
-                    }
-                    _ => unreachable!("Did not get a meta list"),
+                    let mdata = Metadata {
+                        name: ident.clone().to_string(),
+                        value: s.value().to_string(),
+                    };
+                    metadata.insert(ident.clone().to_string(), mdata);
+                    Ok(())
+                });
+
+                if parse_result.is_err() {
+                    panic!(
+                        "could not parse fixed_width metadata for field: {}",
+                        field.ident.clone().unwrap()
+                    );
                 }
-            } else if attr.path == parse_quote!(serde) {
-                if let Ok(syn::Meta::List(syn::MetaList { ref nested, .. })) = attr.parse_meta() {
-                    let meta_items: Vec<&syn::NestedMeta> = nested.iter().collect();
-
-                    for meta_item in meta_items {
-                        if let syn::NestedMeta::Meta(syn::Meta::Path(syn::Path {
-                            ref segments,
-                            ..
-                        })) = meta_item
-                        {
-                            for segment in segments {
-                                if segment.ident == "skip" {
-                                    skip = true;
-                                }
-                            }
-                        }
+            } else if attr.path().is_ident("serde") {
+                let parse_result = attr.parse_nested_meta(|meta| {
+                    if meta.path.is_ident("skip") {
+                        skip = true;
                     }
+                    Ok(())
+                });
+
+                if parse_result.is_err() {
+                    panic!(
+                        "could not parse serde metadata for field: {}",
+                        field.ident.clone().unwrap()
+                    );
                 }
             }
         }
