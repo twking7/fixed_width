@@ -386,7 +386,7 @@ impl FieldSet {
                 Self::Seq(_) => Self::Seq(vec![self]).extend(item),
             },
             Self::Seq(mut seq) => {
-                seq.extend(item.into_iter());
+                seq.extend(item);
                 Self::Seq(seq)
             }
         }

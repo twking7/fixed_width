@@ -220,7 +220,7 @@ pub struct Deserializer<'r> {
     input: &'r [u8],
 }
 
-impl<'r, 'de> Deserializer<'r> {
+impl<'r> Deserializer<'r> {
     /// Creates a new Deserializer from the given bytes and field definitions.
     ///
     /// ### Example

@@ -196,7 +196,7 @@ fn impl_fixed_width(ast: &DeriveInput) -> TokenStream {
 }
 
 fn should_skip(field: &&syn::Field) -> bool {
-    !Context::from_field(*field).skip
+    !Context::from_field(field).skip
 }
 
 fn build_field_def(field: &syn::Field) -> FieldDef {
