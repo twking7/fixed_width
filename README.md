@@ -1,4 +1,4 @@
-# Fixed Width &emsp; [![Build Status]][tests] [![Latest Version]][crates.io] [![Documents]][docs.rs]
+# Fixed Width &emsp; ![Build Status] [![Latest Version]][crates.io] [![Documents]][docs.rs]
 
 [Build Status]: https://github.com/twking7/fixed_width/actions/workflows/rust.yml/badge.svg
 [Latest Version]: https://img.shields.io/badge/crates.io-0.6.0-blue.svg
