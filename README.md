@@ -129,10 +129,10 @@ use std::fs;
 
 // from a file path on disk
 let filepath = "/path/to/file.txt";
-let mut reader = Reader::from_file(filepath).width(5);
+let mut reader = Reader::from_file(filepath)?.width(5);
 
 // from a file handle
-let file = fs::File::open(filepath);
+let file = fs::File::open(filepath)?;
 let mut reader = Reader::from_reader(file).width(5);
 ```
 
