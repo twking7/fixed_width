@@ -92,7 +92,7 @@ There are two categories of attributes:
 
 - `field_def = "path"`
 
-Call a function to get the fields definition. The given function must be callable 
+Call a function to get the fields definition. The given function must be callable
 as `fn() -> fixed_width::FieldSet`.
 
 ## Field attributes
@@ -160,7 +160,7 @@ fn impl_fixed_width(ast: &DeriveInput) -> TokenStream {
 
         for field in &fields {
             for attr in &field.attrs {
-                if attr.path.is_ident("fixed_width") {
+                if attr.path().is_ident("fixed_width") {
                     panic!("specify whether container attribue `field_def` or field attribue respectively");
                 }
             }
