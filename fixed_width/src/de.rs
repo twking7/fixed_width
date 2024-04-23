@@ -787,8 +787,7 @@ mod test {
     #[test]
     fn unit_de() {
         let fields = FieldSet::Seq(vec![FieldSet::new_field(0..1)]);
-        let u: () = from_bytes_with_fields(b"c", fields).unwrap();
-        assert_eq!(u, ());
+        let _: () = from_bytes_with_fields(b"c", fields).unwrap();
     }
 
     #[derive(Debug, PartialEq, Deserialize)]
@@ -943,7 +942,7 @@ mod test {
         let fields = FieldSet::Seq(vec![FieldSet::new_field(0..1)]);
         let tc: TestBool = from_bytes_with_fields(b"  ", fields).unwrap();
 
-        assert_eq!(tc.a, false);
+        assert!(!tc.a);
     }
 
     #[derive(Debug, Deserialize, PartialEq)]

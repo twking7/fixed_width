@@ -297,9 +297,10 @@ mod test {
     fn test_write() {
         let bytes = b"abcd1234";
         let mut w = Writer::from_memory();
-        w.write(bytes).unwrap();
+        let written = w.write(bytes).unwrap();
         let s: String = w.into();
 
+        assert!(written > 0);
         assert_eq!(s, "abcd1234");
     }
 }

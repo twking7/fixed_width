@@ -136,9 +136,9 @@ fn test_from_fixed_record_when_input_is_too_small() {
     let err = Stuff::deserialize(&mut de);
 
     match err {
-        Ok(_) => assert!(false, "expected Err, got Ok"),
-        Err(DeserializeError::UnexpectedEndOfRecord) => assert!(true),
-        Err(e) => assert!(false, "expected InvalidRecordError, got {}", e),
+        Ok(_) => panic!("expected Err, got Ok"),
+        Err(DeserializeError::UnexpectedEndOfRecord) => {}
+        Err(e) => panic!("expected InvalidRecordError, got {}", e),
     }
 }
 
@@ -179,7 +179,7 @@ fn test_multiple_record_types() {
     let mut rec2 = false;
 
     while let Some(Ok(bytes)) = reader.next_record() {
-        match bytes.get(0) {
+        match bytes.first() {
             Some(b'0') => {
                 let Record1 { state, .. } = fixed_width::from_bytes(bytes).unwrap();
                 rec1 = true;
@@ -190,8 +190,8 @@ fn test_multiple_record_types() {
                 rec2 = true;
                 assert_eq!(name, "BOB");
             }
-            Some(_) => assert!(false, "unexpected record type"),
-            None => assert!(false, "unexpected None"),
+            Some(_) => panic!("unexpected record type"),
+            None => panic!("unexpected None"),
         }
     }
 

@@ -531,10 +531,10 @@ mod test {
         let mut wrtr = Writer::from_memory();
         let fields = FieldSet::new_field(0..4);
 
-        to_writer_with_fields(&mut wrtr, &(12.3 as f32), fields.clone()).unwrap();
-        to_writer_with_fields(&mut wrtr, &(-2.3 as f32), fields.clone()).unwrap();
-        to_writer_with_fields(&mut wrtr, &(24.6 as f64), fields.clone()).unwrap();
-        to_writer_with_fields(&mut wrtr, &(-2.6 as f64), fields.clone()).unwrap();
+        to_writer_with_fields(&mut wrtr, &(12.3_f32), fields.clone()).unwrap();
+        to_writer_with_fields(&mut wrtr, &(-2.3_f32), fields.clone()).unwrap();
+        to_writer_with_fields(&mut wrtr, &(24.6_f64), fields.clone()).unwrap();
+        to_writer_with_fields(&mut wrtr, &(-2.6_f64), fields.clone()).unwrap();
 
         let s: String = wrtr.into();
         assert_eq!(s, "12.3-2.324.6-2.6");
@@ -674,9 +674,9 @@ mod test {
         let res = to_writer_with_fields(&mut wrtr, &h, fields);
 
         match res {
-            Ok(_) => assert!(false, "should not be Ok"),
-            Err(Error::SerializeError(SerializeError::Unsupported(_))) => assert!(true),
-            Err(_) => assert!(false, "should be an unsupported error"),
+            Ok(_) => panic!("should not be Ok"),
+            Err(Error::SerializeError(SerializeError::Unsupported(_))) => {}
+            Err(_) => panic!("should be an unsupported error"),
         };
     }
 
@@ -717,13 +717,13 @@ mod test {
 
     #[test]
     fn pad_left_justified() {
-        let inputs = vec!["123456789".as_bytes(), "12345".as_bytes(), "123".as_bytes()];
+        let inputs = ["123456789".as_bytes(), "12345".as_bytes(), "123".as_bytes()];
         let field = &FieldSet::new_field(0..5)
             .justify(Justify::Left)
             .pad_with('T')
             .flatten()[0];
 
-        let expected = vec!["12345".as_bytes(), "12345".as_bytes(), "123TT".as_bytes()];
+        let expected = ["12345".as_bytes(), "12345".as_bytes(), "123TT".as_bytes()];
 
         for (i, input) in inputs.iter().enumerate() {
             let padded = pad(input, field);
@@ -733,13 +733,13 @@ mod test {
 
     #[test]
     fn pad_right_justified() {
-        let inputs = vec!["123456789".as_bytes(), "12345".as_bytes(), "123".as_bytes()];
+        let inputs = ["123456789".as_bytes(), "12345".as_bytes(), "123".as_bytes()];
         let field = &FieldSet::new_field(0..5)
             .justify(Justify::Right)
             .pad_with('T')
             .flatten()[0];
 
-        let expected = vec!["12345".as_bytes(), "12345".as_bytes(), "TT123".as_bytes()];
+        let expected = ["12345".as_bytes(), "12345".as_bytes(), "TT123".as_bytes()];
 
         for (i, input) in inputs.iter().enumerate() {
             let padded = pad(input, field);

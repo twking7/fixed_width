@@ -535,7 +535,7 @@ mod test {
 
         let mut rdr = Reader::from_bytes(b);
 
-        let mut buf = Vec::with_capacity(16);
+        let mut buf = vec![0; 16];
         let bytes_read = rdr.read(&mut buf).unwrap();
 
         assert_eq!(buf, b[..bytes_read].to_vec());
