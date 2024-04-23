@@ -31,6 +31,7 @@ impl Container {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct FieldDef {
     pub ident: syn::Ident,
@@ -116,6 +117,7 @@ impl Context {
     }
 }
 
+#[allow(dead_code)]
 pub struct Metadata {
     pub name: String,
     pub value: String,

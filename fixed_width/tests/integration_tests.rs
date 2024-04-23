@@ -45,7 +45,7 @@ fn read_from_file_with_newlines() {
 #[test]
 fn write_to_file() {
     let path = "./tests/data/sample_write.txt";
-    let records = vec![
+    let records = [
         "1111222233334444".to_string(),
         "1111222233334444".to_string(),
         "1111222233334444".to_string(),
@@ -67,7 +67,7 @@ fn write_to_file() {
 #[test]
 fn write_to_file_with_newlines() {
     let path = "./tests/data/sample_write_newlines.txt";
-    let records = vec![
+    let records = [
         "1111222233334444".to_string(),
         "1111222233334444".to_string(),
         "1111222233334444".to_string(),
